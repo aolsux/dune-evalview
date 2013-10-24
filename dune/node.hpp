@@ -53,11 +53,30 @@ protected:
 
     enum {dim = Traits::dim};
 
+    struct Vertex
+    {
+        std::vector<EntitySeed&> _element_ids;
+        unsigned _id;
+        unsigned _idx;
+        shortvector<real,dim> _global;
+
+        template<class V>
+        Vertex(const V& v)
+        {
+            auto g = v.position(0);
+            for(unsigned u = 0; u < dim; u++)
+                _global(u) = g[u];
+            _id = v.id();
+            _idx = v.idx();
+        }
+
+    };
+
 protected:
     Node<GV>*                    _parent;
     Node* _child[2];
 
-    std::vector<unsigned>        _vertex_ids;
+    std::vector<Vertex& >        _vertex;
 
     typename Traits::GridView&   _gridView;
 
@@ -71,6 +90,8 @@ protected:
 
     // the depth of the node in the tree
     unsigned                     _level;
+
+    bool                         _isLeaf;
 
 
 protected:
@@ -86,9 +107,10 @@ protected:
     // vid contain indices of all vertices that reside in the space defined by boundingbox
     // p array of global space coordinates corresponding to the indices stored int vid
     // s size of p and vid TODO: remove s we dont need it
-    void put(const std::vector<unsigned>& vid, shortvector<real,dim>* p, std::size_t s)
+    void put(beginIt, endIt)
     {
-        _vertex_ids = vid;
+        vertex.clear();
+        std::copy( beginIt, endIt, _vertex.begin());
 
         // abort the recursion if there is only one vertex left within this node
         if(_vertex_ids.size()<=1)
@@ -113,6 +135,8 @@ protected:
 
     void split()
     {
+        assert(_child[0] == NULL, "Child 0 exists!" );
+        assert(_child[1] == NULL, "Child 1 exists!" );
         // construct the two childs
         _child[0] = new Node(this, _bounding_box.split(_orientation,true), _level+1);
         _child[1] = new Node(this, _bounding_box.split(_orientation,false), _level+1);

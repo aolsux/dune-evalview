@@ -61,24 +61,7 @@ protected:
 
     std::vector<EntitySeed> _entities;
 
-    struct Vertex
-    {
-        std::vector<unsigned> _element_ids;
-        unsigned _id;
-        unsigned _idx;
-        shortvector<real,dim> _global;
 
-        template<class V>
-        Vertex(const V& v)
-        {
-            auto g = v.position(0);
-            for(unsigned u = 0; u < dim; u++)
-                _global(u) = g[u];
-            _id = v.id();
-            _idx = v.idx();
-        }
-
-    };
 
     // map each vertex id to its corresponding entity index. where entity index is the
     // index of the entity seed for the container above.
@@ -117,7 +100,7 @@ public:
 
         split();
         // generate list of vertices
-        put(/*list of vertices*/);
+        put( beginIt, endIt );
     }
 
      // iterate over all leafs of the node
