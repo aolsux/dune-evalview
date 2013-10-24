@@ -28,101 +28,44 @@
 //     Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.       //
 //                                                                                      //
 //**************************************************************************************//
-/*! \file */
+/*! \file */ 
 #pragma once
 
-#include <sstream>
+#include <exception>
 #include <string>
-#include <functional>
 
-// #include <error/baseerror.hpp>
-// #include <utils/tuple.hpp>
+#define __ERROR_INFO__    __FUNCTION__, __FILE__, __LINE__
 
-template< typename _T >
-inline void safe_delete( _T*& pnt ) {
-    if ( pnt ) delete pnt;
-    pnt = NULL;
-}
-
-template< typename _T >
-inline void safe_array_delete( _T*& pnt ) {
-    if ( pnt ) delete [] pnt;
-    pnt = NULL;
-}
-
-template< typename T >
-inline const std::string asString( const T& arg ) {
-    std::stringstream buf;
-
-    buf << arg;
-
-    return buf.str();
-}
-
-inline const std::string asString( const std::string& arg ) {
-    return arg;
-}
-
-inline const std::string asString( const bool arg ) {
-    return arg ? "true" : "false";
-}
-
-enum CnslEsc {
-    CE_RESET        = 0,    // Reset all attributes
-    CE_BRIGHT       = 1,    // Bright
-    CE_DIM          = 2,    // Dim
-    CE_UNDERSCORE   = 4,    // Underscore
-    CE_BLINK        = 5,    // Blink
-    CE_REVERSE      = 7,    // Reverse
-    CE_HIDDEN       = 8,    // Hidden
-
-// Foreground Colors
-    CE_FG_BLACK     = 30,   // Black
-    CE_FG_RED       = 31,   // Red
-    CE_FG_GREEN     = 32,   // Green
-    CE_FG_YELLOW    = 33,   // Yellow
-    CE_FG_BLUE      = 34,   // Blue
-    CE_FG_MAGENTA   = 35,   // Magenta
-    CE_FG_CYAN      = 36,   // Cyan
-    CE_FG_WHITE     = 37,   // White
-
-// Background Colors
-    CE_BG_BLACK     = 40,   // Black
-    CE_BG_RED       = 41,   // Red
-    CE_BG_GREEN     = 42,   // Green
-    CE_BG_YELLOW    = 43,   // Yellow
-    CE_BG_BLUE      = 44,   // Blue
-    CE_BG_MAGENTA   = 45,   // Magenta
-    CE_BG_CYAN      = 46,   // Cyan
-    CE_BG_WHITE     = 47    // White
+class BaseError : public std::exception {
+protected:
+    std::string func;
+    std::string file;
+    int         line;
+    
+    const std::string where() const {
+        char s[20];
+        sprintf(s,"%5.5d", line);
+        return file + " at " + func + ":" + s;
+    }
+    
+public:
+    BaseError( const char* fc, const char* f, const int l ) noexcept : func(fc), file(f), line(l) {}
+    
+    virtual const char* what() const noexcept {
+        std::string msg = "Error in " + where();
+        return msg.c_str();
+    }
 };
 
-inline std::ostream& operator << ( std::ostream& os, const CnslEsc& val ){
-    char esc[10];
-    sprintf(esc, "\033[%dm", val);
-    os << esc;
-    return os;
-}
 
-#define COLOR_CONSOLE
-// enable colored console output with "-DCOLOR_CONSOLE"
-#ifdef COLOR_CONSOLE
-    #define CE_KEYWORD  CE_FG_BLUE << CE_BRIGHT
-    #define CE_LINE     CE_FG_GREEN
-    #define CE_STATUS   CE_FG_GREEN
-    #define CE_TIME     CE_FG_YELLOW
-    #define CE_DEBUG    CE_FG_MAGENTA << CE_BRIGHT << "[ DEBUG ]   " << CE_RESET << CE_FG_MAGENTA
-    #define CE_ERROR    CE_FG_RED  << CE_BRIGHT << "[ ERROR ]   " << CE_RESET << CE_FG_RED
-    #define CE_WARNING  CE_FG_CYAN << CE_BRIGHT << "[ WARNING ] " << CE_RESET << CE_FG_CYAN
-    #define CE_LICENSE  CE_FG_YELLOW
-#else
-    #define CE_KEYWORD  ""
-    #define CE_LINE     ""
-    #define CE_STATUS   ""
-    #define CE_TIME     ""
-    #define CE_DEBUG    "[ DEBUG ]   "
-    #define CE_ERROR    "[ ERROR ]   "
-    #define CE_WARNING  "[ WARNING ] "
-    #define CE_LICENSE  ""
-#endif
 
+
+class NotImplemented : public BaseError {
+public:
+    NotImplemented ( const char* fc, const char* f, const int l ) : BaseError( fc, f, l ) {}
+    
+    virtual const char* what() const noexcept {
+        std::string msg = "The called function/method was not implemented yet! " + where();
+        return msg.c_str();
+    }
+};

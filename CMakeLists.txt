@@ -16,4 +16,6 @@ set(CMAKE_CXX_FLAGS_RELEASE "${DEFINES} -march=native -fopenmp -std=c++11 -O3 -g
 
 set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--export-dynamic,--no-undefined,--as-needed")
 
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH} )
+
 add_subdirectory( dune )

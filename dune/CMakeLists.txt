@@ -6,8 +6,8 @@ find_package(Boost COMPONENTS system filesystem serialization REQUIRED)
 include(${VTK_USE_FILE})
 
 
-include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/contrib/include
-                     ${CMAKE_CURRENT_SOURCE_DIR}/dune )
+include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../contrib/include
+                     ${CMAKE_CURRENT_SOURCE_DIR}/ )
 
 
 include_directories(${Boost_INCLUDE_DIRS})

@@ -28,101 +28,91 @@
 //     Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.       //
 //                                                                                      //
 //**************************************************************************************//
-/*! \file */
+/*! \file */ 
 #pragma once
 
-#include <sstream>
-#include <string>
-#include <functional>
+#include <vector>
+#include <error/baseerror.hpp>
 
-// #include <error/baseerror.hpp>
-// #include <utils/tuple.hpp>
+template< typename T, unsigned N >
+struct TupleA {
+    T data[N];
 
-template< typename _T >
-inline void safe_delete( _T*& pnt ) {
-    if ( pnt ) delete pnt;
-    pnt = NULL;
-}
+    TupleA() { for (unsigned k = 0; k < N; k++ ) data[k] = 0; }
 
-template< typename _T >
-inline void safe_array_delete( _T*& pnt ) {
-    if ( pnt ) delete [] pnt;
-    pnt = NULL;
-}
+    template< typename ... _T >
+    TupleA( const _T ... in ) { 
+        static_assert( (N == sizeof...(in)) || (1 == sizeof...(in)), "Invalid number of arguments in constructor");
 
-template< typename T >
-inline const std::string asString( const T& arg ) {
-    std::stringstream buf;
+        if ( N == sizeof...(in) ) {
+            T val [] = { static_cast<T>( in ) ... };
+            for ( unsigned k = 0; k < N; k++ )
+                data[k] = val[k];
+        } else {
+            T val [] = { static_cast<T>( in ) ... };
+            for ( unsigned k = 0; k < N; k++ )
+                data[k] = val[0];
+        }
 
-    buf << arg;
+    }
 
-    return buf.str();
-}
-
-inline const std::string asString( const std::string& arg ) {
-    return arg;
-}
-
-inline const std::string asString( const bool arg ) {
-    return arg ? "true" : "false";
-}
-
-enum CnslEsc {
-    CE_RESET        = 0,    // Reset all attributes
-    CE_BRIGHT       = 1,    // Bright
-    CE_DIM          = 2,    // Dim
-    CE_UNDERSCORE   = 4,    // Underscore
-    CE_BLINK        = 5,    // Blink
-    CE_REVERSE      = 7,    // Reverse
-    CE_HIDDEN       = 8,    // Hidden
-
-// Foreground Colors
-    CE_FG_BLACK     = 30,   // Black
-    CE_FG_RED       = 31,   // Red
-    CE_FG_GREEN     = 32,   // Green
-    CE_FG_YELLOW    = 33,   // Yellow
-    CE_FG_BLUE      = 34,   // Blue
-    CE_FG_MAGENTA   = 35,   // Magenta
-    CE_FG_CYAN      = 36,   // Cyan
-    CE_FG_WHITE     = 37,   // White
-
-// Background Colors
-    CE_BG_BLACK     = 40,   // Black
-    CE_BG_RED       = 41,   // Red
-    CE_BG_GREEN     = 42,   // Green
-    CE_BG_YELLOW    = 43,   // Yellow
-    CE_BG_BLUE      = 44,   // Blue
-    CE_BG_MAGENTA   = 45,   // Magenta
-    CE_BG_CYAN      = 46,   // Cyan
-    CE_BG_WHITE     = 47    // White
+    inline T& operator()( const unsigned k ) { return data[k]; }
+    inline const T& operator()( const unsigned k ) const { return data[k]; }
 };
 
-inline std::ostream& operator << ( std::ostream& os, const CnslEsc& val ){
-    char esc[10];
-    sprintf(esc, "\033[%dm", val);
-    os << esc;
-    return os;
+template< typename T, unsigned N >
+inline std::ostream& operator<< ( std::ostream& out, const TupleA<T, N>& v ) {
+    out << "( ";
+    for ( unsigned k = 0; k < N; k++ )     
+        out << v.data[k] << ((k < N - 1 ) ? ", " : "");
+    out << " )";
+    return out;
 }
 
-#define COLOR_CONSOLE
-// enable colored console output with "-DCOLOR_CONSOLE"
-#ifdef COLOR_CONSOLE
-    #define CE_KEYWORD  CE_FG_BLUE << CE_BRIGHT
-    #define CE_LINE     CE_FG_GREEN
-    #define CE_STATUS   CE_FG_GREEN
-    #define CE_TIME     CE_FG_YELLOW
-    #define CE_DEBUG    CE_FG_MAGENTA << CE_BRIGHT << "[ DEBUG ]   " << CE_RESET << CE_FG_MAGENTA
-    #define CE_ERROR    CE_FG_RED  << CE_BRIGHT << "[ ERROR ]   " << CE_RESET << CE_FG_RED
-    #define CE_WARNING  CE_FG_CYAN << CE_BRIGHT << "[ WARNING ] " << CE_RESET << CE_FG_CYAN
-    #define CE_LICENSE  CE_FG_YELLOW
-#else
-    #define CE_KEYWORD  ""
-    #define CE_LINE     ""
-    #define CE_STATUS   ""
-    #define CE_TIME     ""
-    #define CE_DEBUG    "[ DEBUG ]   "
-    #define CE_ERROR    "[ ERROR ]   "
-    #define CE_WARNING  "[ WARNING ] "
-    #define CE_LICENSE  ""
-#endif
 
+
+
+template< typename T >
+struct TupleB {
+    typedef T* _Tp;
+    
+    const size_t size;
+    const _Tp    data;
+
+    TupleB( const size_t s ) : size(s), data( new T [s] ) { for (unsigned k = 0; k < s; k++ ) data[k] = 0; }
+
+    template< typename ... _T >
+    TupleB( const _T ... in ) : size(sizeof...(in)), data( new T [size] )  { 
+            T val [] = { static_cast<T>( in ) ... };
+            for ( unsigned k = 0; k < size; k++ )
+                data[k] = val[k];
+    }
+    
+    template< typename ... _T >
+    TupleB( const unsigned N, const _T ... in ) : size(sizeof...(in)), data( new T [size] ) { 
+        if ( (N != sizeof...(in)) && (1 != sizeof...(in)) ) throw BaseError(/*"Invalid number of arguments in constructor"*/__ERROR_INFO__);
+
+        if ( N == sizeof...(in) ) {
+            T val [] = { static_cast<T>( in ) ... };
+            for ( unsigned k = 0; k < N; k++ )
+                data[k] = val[k];
+        } else {
+            T val [] = { static_cast<T>( in ) ... };
+            for ( unsigned k = 0; k < N; k++ )
+                data[k] = val[0];
+        }
+
+    }
+    
+    inline T& operator()( const unsigned k ) { return data[k]; }
+    inline const T& operator()( const unsigned k ) const { return data[k]; }
+};
+
+template< typename T >
+inline std::ostream& operator<< ( std::ostream& out, const TupleB<T>& v ) {
+    out << "( ";
+    for ( unsigned k = 0; k < v.size; k++ )     
+        out << v.data[k] << ((k < v.size - 1 ) ? ", " : "");
+    out << " )";
+    return out;
+}
