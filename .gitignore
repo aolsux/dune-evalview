@@ -1,0 +1,7 @@
+*~
+*.log
+*.aux
+*.bak
+*.kdev4
+build/
+doxy/
