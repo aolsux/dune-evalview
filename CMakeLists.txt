@@ -2,6 +2,7 @@ project(dune-evalview)
 
 cmake_minimum_required(VERSION 2.8)
 
+set(CMAKE_BUILD_TYPE "Release" )
 
 set(DEFINES "-Wno-unknown-pragmas -Wdelete-non-virtual-dtor -Wno-deprecated-declarations")
 

@@ -272,34 +272,34 @@ inline void asShortVector( Dune::FieldVector< T, dim >& f, ShortVector< T, dim >
         v.data[k] = f[k];
 }
 
-template< typename BT, unsigned dim, class GridView >
-void saveMesh( GridView& gridView, const std::string& path ) {
-    CubeMesh< BT, dim > cmesh;
-
-    BoundingBox< BT, dim > boundingbox;
-
-    cmesh.choleskyFactor = "";
-
-    for ( auto elm = gridView.template begin<0>(); elm!= gridView.template end<0>(); ++elm ) {
-        ShortVector< BT, dim > corner[NUM_CORNERS(dim)];
-
-        for ( int c = 0; c < NUM_CORNERS(dim); c++ ) {
-            asShortVector<BT, dim>( elm->geometry().corner(c), corner[NUM_CORNERS(dim)-c-1] );
-            boundingbox.include(corner[c]);
-        }
-
-        Cube< BT, dim > cube( corner );
-        cmesh.push_back( cube );
-    }
-
-    cmesh.boundingbox    = boundingbox;
-
-    try {
-        hxgeomatch::save( path, cmesh );
-    } catch ( boost::archive::archive_exception& err ) {
-        std::cout << "Boost Archive Error " << err.what() << "[" << boost::archive::Code2String(err.code) << "]" << " --> " << __FILE__ << ":" << __LINE__ << std::endl;
-    }
-}
+// template< typename BT, unsigned dim, class GridView >
+// void saveMesh( GridView& gridView, const std::string& path ) {
+//     CubeMesh< BT, dim > cmesh;
+//
+//     BoundingBox< BT, dim > boundingbox;
+//
+//     cmesh.choleskyFactor = "";
+//
+//     for ( auto elm = gridView.template begin<0>(); elm!= gridView.template end<0>(); ++elm ) {
+//         ShortVector< BT, dim > corner[NUM_CORNERS(dim)];
+//
+//         for ( int c = 0; c < NUM_CORNERS(dim); c++ ) {
+//             asShortVector<BT, dim>( elm->geometry().corner(c), corner[NUM_CORNERS(dim)-c-1] );
+//             boundingbox.include(corner[c]);
+//         }
+//
+//         Cube< BT, dim > cube( corner );
+//         cmesh.push_back( cube );
+//     }
+//
+//     cmesh.boundingbox    = boundingbox;
+//
+//     try {
+//         hxgeomatch::save( path, cmesh );
+//     } catch ( boost::archive::archive_exception& err ) {
+//         std::cout << "Boost Archive Error " << err.what() << "[" << boost::archive::Code2String(err.code) << "]" << " --> " << __FILE__ << ":" << __LINE__ << std::endl;
+//     }
+// }
 
 template< typename BT, unsigned dim >
 struct XT {

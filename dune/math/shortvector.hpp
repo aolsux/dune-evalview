@@ -48,7 +48,7 @@ extern "C" {
 
 #define SHORT_VECTOR_INIT_ZERO
 
-namespace math {
+//namespace math {
 
 /** @addtogroup ShortVector
  *
@@ -437,4 +437,4 @@ inline std::ostream& operator<< ( std::ostream& out, const ShortVector<T, N>& v 
 
 
 /** @} */
-}
+//}

@@ -1,6 +1,7 @@
 find_package(VTK REQUIRED)
 find_package(ALUGrid REQUIRED)
 find_package(DUNE REQUIRED)
+find_package(Metis REQUIRED)
 find_package(Boost COMPONENTS system filesystem serialization REQUIRED)
 
 include(${VTK_USE_FILE})
@@ -13,6 +14,7 @@ include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../contrib/include
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${DUNE_INCLUDE_DIRS})
 include_directories(${ALUGRID_INCLUDE_DIRS})
+include_directories(${METIS_INCLUDE_DIRS})
 
 add_executable(test     test.cpp    )
 

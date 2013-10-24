@@ -1,7 +1,7 @@
 # - Try to find Metis
-find_path(METIS_INCLUDE_DIR metis.h HINTS /home/mrueckl/opt/metis-5.0.2/include)
+find_path(METIS_INCLUDE_DIR metis.h HINTS ${METIS_ROOT}/include )
 
-find_library(METIS_LIBRARY metis HINTS /home/mrueckl/opt/metis-5.0.2/lib)
+find_library(METIS_LIBRARY metis HINTS ${METIS_ROOT}/lib )
 
 set(METIS_LIBRARIES ${METIS_LIBRARY})
 set(METIS_INCLUDE_DIRS ${METIS_INCLUDE_DIR} )
