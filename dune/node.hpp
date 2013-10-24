@@ -33,6 +33,7 @@
 #pragma once
 
 #include <math/boundingbox.hpp>
+#include <assert.h>
 
 namespace evalview {
 
@@ -50,37 +51,97 @@ protected:
 
     typedef math::BoundingBox<Traits::Real,Traits::dim> BoundingBox;
 
-public:
-    enum Orientation {
-        co_left     = -1,
-        co_right    = +1
-    };
-
-
+    enum {dim = Traits::dim};
 
 protected:
-    Node<GV>*                    _father;
+    Node<GV>*                    _parent;
+    Node* _child[2];
+
+    std::vector<unsigned>        _vertex_ids;
+
     typename Traits::GridView&   _gridView;
-    Orientation                  _orientation;
+
     BoundingBox                  _bounding_box;
+
+    // the normal of the plane that splits this node
+    shortvector<real,dim>        _normal;
+
+    // the dimension that is split by this node
+    unsigned                     _orientation;
+
+    // the depth of the node in the tree
+    unsigned                     _level;
+
 
 protected:
     Node() = delete;
 
-    Node(Node* father, const typename Traits::GridView& gv) :
-        _father(father), _gridView(gv) {}
+    //TODO: we probably dont need it.
+    Node(Node* parent, const typename Traits::GridView& gv) :
+        _parent(parent), _gridView(gv) {}
+
+    bool left(const shortvector<real,dim>& p)  const { return dot((p-_bounding_box.center),_normal)<0;     }
+    bool right(const shortvector<real,dim>& p) const { return !left(p);}
+
+    // vid contain indices of all vertices that reside in the space defined by boundingbox
+    // p array of global space coordinates corresponding to the indices stored int vid
+    // s size of p and vid TODO: remove s we dont need it
+    void put(const std::vector<unsigned>& vid, shortvector<real,dim>* p, std::size_t s)
+    {
+        _vertex_ids = vid;
+
+        // abort the recursion if there is only one vertex left within this node
+        if(_vertex_ids.size()<=1)
+            return;
+
+        split();
+
+        std::vector<unsigned> l,r;
+        for(unsigned k : _vertex_ids)
+        {
+            assert(k < s,"index out of bounds");
+            if(left(p[k]))
+                l.push_back(k);
+            else
+                r.push_back(k);
+        }
+
+        _child[0]->put(l,p,s);
+        _child[1]->put(r,p,s);
+
+    }
+
+    void split()
+    {
+        // construct the two childs
+        _child[0] = new Node(this, _bounding_box.split(_orientation,true), _level+1);
+        _child[1] = new Node(this, _bounding_box.split(_orientation,false), _level+1);
+    }
 
 public:
 
     Node( const Node& node ) = delete;
 
-    Node( const Node* father, const Orientation orientation ) :
-        _father(father), _orientation(orientation)
+    Node( const Node* parent, const BoundingBox& box, unsigned level) :
+        _parent(parent),
+        _level(level),
+        _bounding_box(box),
+        _normal(0.),
+        _orientation(level%dim),
+        _child({NULL,NULL})
     {
-
+        _normal(_orientation) = 1.;
     }
 
-   
+    virtual ~Node()
+    {
+        safe_delete(_child[0]);
+        safe_delete(_child[1]);
+    }
+
+    const Node* child(const unsigned i) const    {        return _child[i];    }
+
+
 
     // iterate over all entities of the node
     std::vector<const Entity&> entities() const {}

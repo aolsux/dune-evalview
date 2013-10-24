@@ -33,14 +33,23 @@
 #pragma once
 
 #include <node.hpp>
+#include <leafview.hpp>
+#include <levelview.hpp>
 
 
 
 namespace evalview {
 
 
+class LeafView;
+class LevelView;
+
+
 template< class GV >
 class Root : public Node<GV> {
+//     friend LeafView;
+//     friend LevelView;
+
 protected:
     using Node<GV>::_father;
     using Node<GV>::_gridview;
@@ -52,10 +61,23 @@ protected:
 
     std::vector<EntitySeed> _entities;
 
-    struct
+    struct Vertex
     {
         std::vector<unsigned> _element_ids;
-        unsigned _vertex_id;
+        unsigned _id;
+        unsigned _idx;
+        shortvector<real,dim> _global;
+
+        template<class V>
+        Vertex(const V& v)
+        {
+            auto g = v.position(0);
+            for(unsigned u = 0; u < dim; u++)
+                _global(u) = g[u];
+            _id = v.id();
+            _idx = v.idx();
+        }
+
     };
 
     // map each vertex id to its corresponding entity index. where entity index is the
@@ -68,20 +90,34 @@ public:
     Root( const typename Traits::GridView& gridview ) :
         Node<GV>(NULL,gridview)/*, _father(NULL), _gridview(gridview)*/
     {
+
         // create container of all entity seeds
         for(Entity e : gridview.elements())
         {
             std::size_t pos = _entities.push_back(EntitySeed(e));
 
-            for (Vertices v : e.vertices())
+            for (auto v : e.vertices())
             {
-                _maping(v.index()).push_back(pos);
+                Vertex& _v = _maping(v.id());
+
+                auto g = v.position(0);
+                for(unsigned u = 0; u < dim; u++)
+                    _v._global(u) = g[u];
+
+                _v._id  = v.id();
+                _v._idx = v.idx();
+                _v._element_ids.push_back(e.id());
+
 
                 _bounding_box.append(v.global());
+
+                // store global coordinates of all vertices
             }
         }
 
-
+        split();
+        // generate list of vertices
+        put(/*list of vertices*/);
     }
 
      // iterate over all leafs of the node
