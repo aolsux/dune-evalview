@@ -32,4 +32,62 @@
 
 #pragma once
 
+#include <math/boundingbox.hpp>
 
+namespace evalview {
+
+
+
+template< class GV >
+class Node {
+protected:
+    struct Traits {
+        typedef GV                               GridView;
+        typedef typename GridView::GridType      GridType;
+        typedef typename GridView::ctype         Real;
+        enum { dim = GridType::dimension, dimw = GridType::dimensionworld};
+    };
+
+    typedef math::BoundingBox<Traits::Real,Traits::dim> BoundingBox;
+
+public:
+    enum Orientation {
+        co_left     = -1,
+        co_right    = +1
+    };
+
+
+
+protected:
+    Node<GV>*                    _father;
+    typename Traits::GridView&   _gridView;
+    Orientation                  _orientation;
+    BoundingBox                  _bounding_box;
+
+protected:
+    Node() = delete;
+
+    Node(Node* father, const typename Traits::GridView& gv) :
+        _father(father), _gridView(gv) {}
+
+public:
+
+    Node( const Node& node ) = delete;
+
+    Node( const Node* father, const Orientation orientation ) :
+        _father(father), _orientation(orientation)
+    {
+
+    }
+
+   
+
+    // iterate over all entities of the node
+    std::vector<const Entity&> entities() const {}
+
+
+
+};
+
+
+}
