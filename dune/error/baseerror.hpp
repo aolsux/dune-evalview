@@ -1,5 +1,6 @@
 //**************************************************************************************//
 //     AUTHOR: Malik Kirchner "malik.kirchner@gmx.net"                                  //
+//             Martin Rückl "martin.rueckl@physik.hu-berlin.de"                         //
 //                                                                                      //
 //     This program is free software: you can redistribute it and/or modify             //
 //     it under the terms of the GNU General Public License as published by             //
@@ -28,7 +29,7 @@
 //     Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.       //
 //                                                                                      //
 //**************************************************************************************//
-/*! \file */ 
+/*! \file */
 #pragma once
 
 #include <exception>
@@ -41,16 +42,16 @@ protected:
     std::string func;
     std::string file;
     int         line;
-    
+
     const std::string where() const {
         char s[20];
         sprintf(s,"%5.5d", line);
         return file + " at " + func + ":" + s;
     }
-    
+
 public:
     BaseError( const char* fc, const char* f, const int l ) noexcept : func(fc), file(f), line(l) {}
-    
+
     virtual const char* what() const noexcept {
         std::string msg = "Error in " + where();
         return msg.c_str();
@@ -63,7 +64,7 @@ public:
 class NotImplemented : public BaseError {
 public:
     NotImplemented ( const char* fc, const char* f, const int l ) : BaseError( fc, f, l ) {}
-    
+
     virtual const char* what() const noexcept {
         std::string msg = "The called function/method was not implemented yet! " + where();
         return msg.c_str();

@@ -1,5 +1,6 @@
 //**************************************************************************************//
 //     AUTHOR: Malik Kirchner "malik.kirchner@gmx.net"                                  //
+//             Martin Rückl "martin.rueckl@physik.hu-berlin.de"                         //
 //                                                                                      //
 //     This program is free software: you can redistribute it and/or modify             //
 //     it under the terms of the GNU General Public License as published by             //
@@ -28,7 +29,7 @@
 //     Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.       //
 //                                                                                      //
 //**************************************************************************************//
-/*! \file */ 
+/*! \file */
 #pragma once
 
 #include <cmath>
@@ -39,37 +40,37 @@
 #define SMALL_MATRIX_INIT_ZERO
 
 namespace math {
-    
+
 /** @addtogroup SmallMatrix
- *  
+ *
  *  @{
  */
-    
+
 template< typename T, unsigned M, unsigned N >
 struct SmallMatrix {
     T               data [M*N];
-    const unsigned  MxN;    
-    
+    const unsigned  MxN;
+
     SmallMatrix() : MxN(M*N) {
         #ifdef SMALL_MATRIX_INIT_ZERO
         memset( data, 0, sizeof(T)*MxN );
         #endif
     }
-    
-    SmallMatrix( const SmallMatrix< T, M, N >& rhs ) : MxN(M*N) { 
+
+    SmallMatrix( const SmallMatrix< T, M, N >& rhs ) : MxN(M*N) {
         fast_memcpy( data, rhs.data, sizeof(T)*MxN );
     }
-    
+
     template< typename ... _T >
-    SmallMatrix( const _T ... in ) : MxN(M*N) { 
+    SmallMatrix( const _T ... in ) : MxN(M*N) {
         static_assert( (M*N == sizeof...(in)) || ((1 == sizeof...(in)) && (M==N)), "Invalid number of arguments in constructor" );
-        
+
         T val [] = { static_cast<T>( in ) ... };
-        
-        if ( N == sizeof...(in) ) 
+
+        if ( N == sizeof...(in) )
             for ( unsigned k = 0; k < MxN; k++ )
                 data[k] = val[k];
-        else 
+        else
             for ( unsigned m = 0; m < M; m++ ) {
                 data[rmat_idx<M,N>(m,m)] = val[0];
                 for ( unsigned n = 0; n < m; n++ ) {
@@ -78,44 +79,44 @@ struct SmallMatrix {
                 }
             }
     }
-    
+
     inline T& operator () ( const unsigned m, const unsigned n ) { return data[rmat_idx<M,N>(m,n)]; }
     inline const T& operator () ( const unsigned m, const unsigned n ) const { return data[rmat_idx<M,N>(m,n)]; }
-    
-    inline const SmallMatrix< T, M, N >& operator = ( const SmallMatrix< T, M, N >& rhs ) { 
-        fast_memcpy( data, rhs.data, sizeof(T)*MxN );        
-        return *this; 
+
+    inline const SmallMatrix< T, M, N >& operator = ( const SmallMatrix< T, M, N >& rhs ) {
+        fast_memcpy( data, rhs.data, sizeof(T)*MxN );
+        return *this;
     }
-    
-    inline const SmallMatrix< T, M, N >& operator = ( const T rhs ) { 
+
+    inline const SmallMatrix< T, M, N >& operator = ( const T rhs ) {
         for ( unsigned m = 0; m < M; m++ ) {
             data[rmat_idx<M,N>(m,m)] = rhs;
             for ( unsigned n = 0; n < m; n++ ) {
                 data[rmat_idx<M,N>(m,n)] = static_cast<T>(0.);
                 data[rmat_idx<M,N>(n,m)] = static_cast<T>(0.);
             }
-        } 
-        return *this; 
+        }
+        return *this;
     }
-    
+
     inline const SmallMatrix< T, M, N >& operator += ( const SmallMatrix< T, M, N >& rhs ) {
         for ( unsigned k = 0; k < MxN; k++ )
             data[k] += rhs.data[k];
         return *this;
     }
-    
+
     inline const SmallMatrix< T, M, N >& operator -= ( const SmallMatrix< T, M, N >& rhs ) {
         for ( unsigned k = 0; k < MxN; k++ )
             data[k] += rhs.data[k];
         return *this;
     }
-    
+
     inline const SmallMatrix< T, M, N >& operator *= ( const T rhs ) {
         for ( unsigned k = 0; k < MxN; k++ )
             data[k] *= rhs;
         return *this;
     }
-    
+
     inline const SmallMatrix< T, M, N >& operator /= ( const T rhs ) {
         const T aux = static_cast<T>(1.)/rhs;
         for ( unsigned k = 0; k < MxN; k++ )
@@ -126,7 +127,7 @@ struct SmallMatrix {
 
 template< typename T, unsigned M, unsigned N >
 inline const SmallMatrix< T, M, N > operator + ( const SmallMatrix< T, M, N >& A, const SmallMatrix< T, M, N >& B ) {
-    SmallMatrix< T, M, N > C;    
+    SmallMatrix< T, M, N > C;
     for ( unsigned k = 0; k < C.MxN; k++ )
         C.data[k] = A.data[k] + B.data[k];
     return C;
@@ -134,16 +135,16 @@ inline const SmallMatrix< T, M, N > operator + ( const SmallMatrix< T, M, N >& A
 
 template< typename T, unsigned M, unsigned N >
 inline const SmallMatrix< T, M, N > operator - ( const SmallMatrix< T, M, N >& A, const SmallMatrix< T, M, N >& B ) {
-    SmallMatrix< T, M, N > C;    
-    for ( unsigned k = 0; k < C.MxN; k++ ) 
+    SmallMatrix< T, M, N > C;
+    for ( unsigned k = 0; k < C.MxN; k++ )
         C.data[k] = A.data[k] - B.data[k];
     return C;
 }
 
 template< typename T, unsigned M, unsigned N >
 inline const SmallMatrix< T, M, N > operator - ( const SmallMatrix< T, M, N >& A ) {
-    SmallMatrix< T, M, N > C;    
-    for ( unsigned k = 0; k < C.MxN; k++ ) 
+    SmallMatrix< T, M, N > C;
+    for ( unsigned k = 0; k < C.MxN; k++ )
         C.data[k] = -A.data[k];
     return C;
 }
@@ -151,10 +152,10 @@ inline const SmallMatrix< T, M, N > operator - ( const SmallMatrix< T, M, N >& A
 template< typename T, unsigned L, unsigned M, unsigned N >
 inline const SmallMatrix< T, L, N > operator * ( const SmallMatrix< T, L, M >& A, const SmallMatrix< T, M, N >& B ) {
     SmallMatrix< T, L, N > C;
-    for ( unsigned l = 0; l < L; l++ ) 
+    for ( unsigned l = 0; l < L; l++ )
         for ( unsigned n = 0; n < N; n++ ) {
             C.data[rmat_idx<L,N>(l,n)] = A.data[rmat_idx<L,M>(l,0)]*B.data[rmat_idx<M,N>(0,n)];
-            for ( unsigned m = 1; m < M; m++ ) 
+            for ( unsigned m = 1; m < M; m++ )
                 C.data[rmat_idx<L,N>(l,n)] += A.data[rmat_idx<L,M>(l,m)]*B.data[rmat_idx<M,N>(m,n)];
         }
     return C;
@@ -162,31 +163,31 @@ inline const SmallMatrix< T, L, N > operator * ( const SmallMatrix< T, L, M >& A
 
 template< typename T, unsigned M, unsigned N >
 inline const SmallMatrix< T, M, N > operator * ( const T A, const SmallMatrix< T, M, N >& B ) {
-    SmallMatrix< T, M, N > C;    
-    for ( unsigned k = 0; k < C.MxN; k++ ) 
+    SmallMatrix< T, M, N > C;
+    for ( unsigned k = 0; k < C.MxN; k++ )
         C.data[k] = A*B.data[k];
     return C;
 }
 
 template< typename T, unsigned M, unsigned N >
 inline const SmallMatrix< T, M, N > operator * ( const SmallMatrix< T, M, N >& A, const T B ) {
-    SmallMatrix< T, M, N > C;    
-    for ( unsigned k = 0; k < C.MxN; k++ ) 
+    SmallMatrix< T, M, N > C;
+    for ( unsigned k = 0; k < C.MxN; k++ )
         C.data[k] = A.data[k]*B;
     return C;
 }
 
 template< typename T, unsigned M, unsigned N >
 inline const SmallMatrix< T, M, N > operator / ( const SmallMatrix< T, M, N >& A, const T B ) {
-    SmallMatrix< T, M, N > C;    
+    SmallMatrix< T, M, N > C;
     const T aux = 1./B;
-    for ( unsigned k = 0; k < C.MxN; k++ ) 
+    for ( unsigned k = 0; k < C.MxN; k++ )
         C.data[k] = A.data[k]*aux;
     return C;
 }
 
 //======= determinant ===================================================================
-// --> Laplacescher Entwicklungssatz: 
+// --> Laplacescher Entwicklungssatz:
 //     http://de.wikipedia.org/wiki/Determinante#Laplacescher_Entwicklungssatz
 
 template< typename T, unsigned N >
@@ -242,7 +243,7 @@ inline const T det( const SmallMatrix< T, N, N > &rhs ) {
 }
 
 //======= permanent =====================================================================
-// --> Laplacescher Entwicklungssatz: 
+// --> Laplacescher Entwicklungssatz:
 //     http://de.wikipedia.org/wiki/Determinante#Laplacescher_Entwicklungssatz
 
 template< typename T, unsigned N >
@@ -298,8 +299,8 @@ inline const T perm( const SmallMatrix< T, N, N > &rhs ) {
 
 template< typename T, unsigned M, unsigned N >
 inline const SmallMatrix< T, N, M > transpose ( const SmallMatrix< T, M, N >& A ) {
-    SmallMatrix< T, N, M > C;    
-    for ( unsigned m = 0; m < M; m++ ) 
+    SmallMatrix< T, N, M > C;
+    for ( unsigned m = 0; m < M; m++ )
         for ( unsigned n = 0; n < N; n++ )
             C.data[rmat_idx<N,M>(n,m)] = A.data[rmat_idx<M,N>(m,n)];
     return C;
@@ -307,7 +308,7 @@ inline const SmallMatrix< T, N, M > transpose ( const SmallMatrix< T, M, N >& A 
 
 template< typename T, unsigned N >
 inline const T trace( const SmallMatrix< T, N, N >& A ) {
-    T C = 0.;    
+    T C = 0.;
     for ( unsigned n = 0; n < N; n++ )
         C += A.data[rmat_idx<N,N>(n,n)];
     return C;

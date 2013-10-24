@@ -1,3 +1,35 @@
+//**************************************************************************************//
+//     AUTHOR: Malik Kirchner "malik.kirchner@gmx.net"                                  //
+//             Martin Rückl "martin.rueckl@physik.hu-berlin.de"                         //
+//                                                                                      //
+//     This program is free software: you can redistribute it and/or modify             //
+//     it under the terms of the GNU General Public License as published by             //
+//     the Free Software Foundation, either version 3 of the License, or                //
+//     (at your option) any later version.                                              //
+//                                                                                      //
+//     This program is distributed in the hope that it will be useful,                  //
+//     but WITHOUT ANY WARRANTY; without even the implied warranty of                   //
+//     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                    //
+//     GNU General Public License for more details.                                     //
+//                                                                                      //
+//     You should have received a copy of the GNU General Public License                //
+//     along with this program.  If not, see <http://www.gnu.org/licenses/>.            //
+//                                                                                      //
+//     Dieses Programm ist Freie Software: Sie können es unter den Bedingungen          //
+//     der GNU General Public License, wie von der Free Software Foundation,            //
+//     Version 3 der Lizenz oder (nach Ihrer Option) jeder späteren                     //
+//     veröffentlichten Version, weiterverbreiten und/oder modifizieren.                //
+//                                                                                      //
+//     Dieses Programm wird in der Hoffnung, dass es nützlich sein wird, aber           //
+//     OHNE JEDE GEWÄHRLEISTUNG, bereitgestellt; sogar ohne die implizite               //
+//     Gewährleistung der MARKTFÄHIGKEIT oder EIGNUNG FÜR EINEN BESTIMMTEN ZWECK.       //
+//     Siehe die GNU General Public License für weitere Details.                        //
+//                                                                                      //
+//     Sie sollten eine Kopie der GNU General Public License zusammen mit diesem        //
+//     Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.       //
+//                                                                                      //
+//**************************************************************************************//
+
 #pragma once
 
 #include <fem/dune.h>
@@ -28,7 +60,7 @@ protected:
     U&          refU;
     const LOP&  lop;
     Dune::GeometryType gt;
-        
+
 public:
 
     /*! @brief The constructor.
@@ -64,12 +96,12 @@ public:
 
         LocalVector<typename U::ElementType, TrialSpaceTag> ul;
         LocalVector<typename U::ElementType, TrialSpaceTag> ul_ref;
-        
+
         typedef LocalVector<typename V::ElementType, TestSpaceTag> LV;
         typedef typename LV::WeightedAccumulationView LVView;
         LV vl;
         LV vl_ref;
-        
+
         const IndexSet& indexset = gfsv.gridView().indexSet();
 
         // traverse grid view
@@ -86,17 +118,17 @@ public:
 
             ul.resize(lfsu.size());
             ul_ref.resize(lfsu.size());
-            
+
             // read coefficents
             lfsu.vread(u,ul);
             lfsu.vread(refU,ul_ref);
 
             vl.assign(lfsu.size(),0.0);
             LVView vlview = vl.weightedAccumulationView(1.0);
-            // volume evaluation            
+            // volume evaluation
             LocalAssemblerCallSwitch<LOP,LOP::doAlphaVolume>::
             alpha_volume(lop,ElementGeometry<Element>(e),lfsu,ul,lfsv,vlview);
-            
+
             vl_ref.assign(lfsu.size(),0.0);
             LVView vlview_ref = vl_ref.weightedAccumulationView(1.0);
             LocalAssemblerCallSwitch<LOP,LOP::doAlphaVolume>::
@@ -105,7 +137,7 @@ public:
                 const auto aux  = (vl[k] - vl_ref[k]);
                 vl[k] = 1.-std::abs(aux);
             }
-            
+
             lfsv.vadd(vl,estimate);
         }                                                 // end of element
     }

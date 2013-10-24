@@ -1,5 +1,6 @@
 //**************************************************************************************//
 //     AUTHOR: Malik Kirchner "malik.kirchner@gmx.net"                                  //
+//             Martin Rückl "martin.rueckl@physik.hu-berlin.de"                         //
 //                                                                                      //
 //     This program is free software: you can redistribute it and/or modify             //
 //     it under the terms of the GNU General Public License as published by             //
@@ -28,7 +29,7 @@
 //     Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.       //
 //                                                                                      //
 //**************************************************************************************//
-/*! \file */ 
+/*! \file */
 #pragma once
 
 #include <utils/tuple.hpp>
@@ -36,10 +37,10 @@
 namespace math {
 
 /** @addtogroup AddressingHelper
- *  
+ *
  *  @{
  */
- 
+
 //! row-major matrix index (C/C++)
 template< unsigned M, unsigned N >
 inline const unsigned rmat_idx( const unsigned m, const unsigned n ) { return N*m + n; }
@@ -67,19 +68,19 @@ inline const int rten_idx( const TupleA< T, sizeof...(N) >& idx ) {
     return l;
 }
 
-template< int N0, typename T > inline const int rten_idx( const TupleA< T, 1 >& idx ) 
+template< int N0, typename T > inline const int rten_idx( const TupleA< T, 1 >& idx )
 { return idx(0); }
 
-template< int N0, int N1, typename T > inline const int rten_idx( const TupleA< T, 2 >& idx ) 
+template< int N0, int N1, typename T > inline const int rten_idx( const TupleA< T, 2 >& idx )
 { return idx(1) + N1*idx(0); }
 
-template< int N0, int N1, int N2, typename T > inline const int rten_idx( const TupleA< T, 3 >& idx ) 
+template< int N0, int N1, int N2, typename T > inline const int rten_idx( const TupleA< T, 3 >& idx )
 { return idx(2) + N2*(idx(1) + N1*idx(0)); }
 
-template< int N0, int N1, int N2, int N3, typename T > inline const int rten_idx( const TupleA< T, 4 >& idx ) 
+template< int N0, int N1, int N2, int N3, typename T > inline const int rten_idx( const TupleA< T, 4 >& idx )
 { return idx(3) + N3*(idx(2) + N2*(idx(1) + N1*idx(0))); }
 
-template< int N0, int N1, int N2, int N3, int N4, typename T > inline const int rten_idx( const TupleA< T, 5 >& idx ) 
+template< int N0, int N1, int N2, int N3, int N4, typename T > inline const int rten_idx( const TupleA< T, 5 >& idx )
 { return idx(4) + N4*(idx(3) + N3*(idx(2) + N2*(idx(1) + N1*idx(0)))); }
 
 
@@ -104,19 +105,19 @@ inline const int cten_idx( const TupleA< T, sizeof...(N) >& idx ) {
     return l;
 }
 
-template< int N0, typename T > inline const int cten_idx( const TupleA< T, 1 >& idx ) 
+template< int N0, typename T > inline const int cten_idx( const TupleA< T, 1 >& idx )
 { return idx(0); }
 
-template< int N0, int N1, typename T > inline const int cten_idx( const TupleA< T, 2 >& idx ) 
+template< int N0, int N1, typename T > inline const int cten_idx( const TupleA< T, 2 >& idx )
 { return idx(0) + N0*idx(1); }
 
-template< int N0, int N1, int N2, typename T > inline const int cten_idx( const TupleA< T, 3 >& idx ) 
+template< int N0, int N1, int N2, typename T > inline const int cten_idx( const TupleA< T, 3 >& idx )
 { return idx(0) + N0*(idx(1) + N1*idx(2)); }
 
-template< int N0, int N1, int N2, int N3, typename T > inline const int cten_idx( const TupleA< T, 4 >& idx ) 
+template< int N0, int N1, int N2, int N3, typename T > inline const int cten_idx( const TupleA< T, 4 >& idx )
 { return idx(0) + N0*(idx(1) + N1*(idx(2) + N2*idx(3))); }
 
-template< int N0, int N1, int N2, int N3, int N4, typename T > inline const int cten_idx( const TupleA< T, 5 >& idx ) 
+template< int N0, int N1, int N2, int N3, int N4, typename T > inline const int cten_idx( const TupleA< T, 5 >& idx )
 { return idx(0) + N0*(idx(1) + N1*(idx(2) + N2*(idx(3) + N3*idx(4)))); }
 
 
@@ -134,19 +135,19 @@ inline const int rten_idx( const types ... i ) {
     return l;
 }
 
-template< int N0 > inline const int rten_idx( const int i0 ) 
+template< int N0 > inline const int rten_idx( const int i0 )
 { return i0; }
 
-template< int N0, int N1 > inline const int rten_idx( const int i0, const int i1 ) 
+template< int N0, int N1 > inline const int rten_idx( const int i0, const int i1 )
 { return i1 + N1*i0; }
 
-template< int N0, int N1, int N2 > inline const int rten_idx( const int i0, const int i1, const int i2 ) 
+template< int N0, int N1, int N2 > inline const int rten_idx( const int i0, const int i1, const int i2 )
 { return i2 + N2*(i1 + N1*i0); }
 
-template< int N0, int N1, int N2, int N3 > inline const int rten_idx( const int i0, const int i1, const int i2, const int i3 ) 
+template< int N0, int N1, int N2, int N3 > inline const int rten_idx( const int i0, const int i1, const int i2, const int i3 )
 { return i3 + N3*(i2 + N2*(i1 + N1*i0)); }
 
-template< int N0, int N1, int N2, int N3, int N4 > inline const int rten_idx( const int i0, const int i1, const int i2, const int i3, const int i4 ) 
+template< int N0, int N1, int N2, int N3, int N4 > inline const int rten_idx( const int i0, const int i1, const int i2, const int i3, const int i4 )
 { return i4 + N4*(i3 + N3*(i2 + N2*(i1 + N1*i0))); }
 
 
@@ -154,30 +155,30 @@ template< int N0, int N1, int N2, int N3, int N4 > inline const int rten_idx( co
 template< int ... N, typename ... types >
 inline const int cten_idx( const types ... i ) {
     static_assert( sizeof...(N) == sizeof...(types), "Invalid number of indices.");
-    
+
     const int idx[] = {static_cast<int>(i)...};
     const int len[] = {static_cast<int>(N)...};
-    
+
     int l = idx[sizeof...(i)-1];
     for ( int k = (int)sizeof...(i)-2; k >= 0; k--)
         l = len[k]*l + idx[k];
-    
+
     return l;
 }
 
-template< int N0 > inline const int cten_idx( const int i0 ) 
+template< int N0 > inline const int cten_idx( const int i0 )
 { return i0; }
 
-template< int N0, int N1 > inline const int cten_idx( const int i0, const int i1 ) 
+template< int N0, int N1 > inline const int cten_idx( const int i0, const int i1 )
 { return i0 + N0*i1; }
 
-template< int N0, int N1, int N2 > inline const int cten_idx( const int i0, const int i1, const int i2 ) 
+template< int N0, int N1, int N2 > inline const int cten_idx( const int i0, const int i1, const int i2 )
 { return i0 + N0*(i1 + N1*i0); }
 
-template< int N0, int N1, int N2, int N3 > inline const int cten_idx( const int i0, const int i1, const int i2, const int i3 ) 
+template< int N0, int N1, int N2, int N3 > inline const int cten_idx( const int i0, const int i1, const int i2, const int i3 )
 { return i0 + N0*(i1 + N1*(i2 + N2*i3)); }
 
-template< int N0, int N1, int N2, int N3, int N4 > inline const int cten_idx( const int i0, const int i1, const int i2, const int i3, const int i4 ) 
+template< int N0, int N1, int N2, int N3, int N4 > inline const int cten_idx( const int i0, const int i1, const int i2, const int i3, const int i4 )
 { return i0 + N0*(i1 + N1*(i2 + N2*(i3 + N3*i4))); }
 
 /** @} */
