@@ -5,3 +5,4 @@
 *.kdev4
 build/
 doxy/
+contrib/
