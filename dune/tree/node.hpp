@@ -32,9 +32,12 @@
 
 #pragma once
 
+#include <limits>
+#include <iostream>
 #include <utils/utils.hpp>
 #include <geometry/boundingbox.hpp>
 #include <assert.h>
+#include <boost/iterator/iterator_concepts.hpp>
 
 namespace tree {
 
@@ -194,8 +197,111 @@ public:
     std::vector<const Entity&> entities() const {}
 
 
+public:
+    struct TreeStats {
+        unsigned numNodes;
+        unsigned numLeafs;
+                
+        unsigned minLevel;
+        Real     aveLevel;
+        unsigned maxLevel;
+        
+        unsigned minVertices;
+        Real     aveVertices;
+        unsigned maxVertices;
+        
+        unsigned minEntitiesPerLeaf;
+        Real     aveEntitiesPerLeaf;
+        unsigned maxEntitiesPerLeaf;
+        
+        TreeStats() : 
+            numNodes( 0 ), 
+            numLeafs( 0 ),         
+            minLevel( std::numeric_limits<unsigned>::max() ), 
+            maxLevel( std::numeric_limits<unsigned>::min() ), 
+            aveLevel( 0. ), 
+            minVertices( std::numeric_limits<unsigned>::max() ), 
+            maxVertices( std::numeric_limits<unsigned>::min() ), 
+            aveVertices( 0. ), 
+            minEntitiesPerLeaf( std::numeric_limits<unsigned>::max() ), 
+            maxEntitiesPerLeaf( std::numeric_limits<unsigned>::min() ), 
+            aveEntitiesPerLeaf( 0. ) {}
+            
+        std::ostream& operator<< ( std::ostream& out ) const {
+            
+            out << "Number of Nodes                     " << numNodes           << std::endl;
+            out << "Number of Leafs                     " << numLeafs           << std::endl << std::endl;
+                    
+            out << "Minimum Level                       " << minLevel           << std::endl;
+            out << "Average Level                       " << aveLevel           << std::endl;
+            out << "Maximum Level                       " << maxLevel           << std::endl << std::endl;
+            
+            out << "Minimum number of Vertices per Node " << minVertices        << std::endl;
+            out << "Average number of Vertices per Node " << aveVertices        << std::endl;
+            out << "Maximum number of Vertices per Node " << maxVertices        << std::endl << std::endl;
+            
+            out << "Minimum number of Entities per Leaf " << minEntitiesPerLeaf << std::endl;
+            out << "Average number of Entities per Leaf " << aveEntitiesPerLeaf << std::endl;
+            out << "Maximum number of Entities per Leaf " << maxEntitiesPerLeaf << std::endl;
+            
+            return out;
+        }
+    };
+    
+protected:
+    
+    void fillTreeStats( TreeStats& ts ) const {
+        ts.minLevel = std::min( ts.minLevel , _level );
+        ts.maxLevel = std::max( ts.maxLevel , _level );
+        ts.aveLevel += static_cast<Real>(_level);
+        
+        const unsigned vs = _vertex.size();
+        ts.minVertices  = std::min( ts.minVertices , vs );
+        ts.maxVertices  = std::max( ts.maxVertices , vs );
+        ts.aveVertices += static_cast<Real>( vs );
+        
+        ts.numNodes++;
+        if ( _isLeaf ) {
+            ts.numLeafs++;
+            
+            if ( vs > 0 ) {
+                assert( vs == 1 );
+                const unsigned    vss  = _vertex[0]->_entity_seed.size();
+                ts.minEntitiesPerLeaf  = std::min( ts.minEntitiesPerLeaf , vss );
+                ts.maxEntitiesPerLeaf  = std::max( ts.maxEntitiesPerLeaf , vss );
+                ts.aveEntitiesPerLeaf += static_cast<Real>( vss );
+            }
+        } else {
+            assert( _child[0] != NULL );
+            assert( _child[1] != NULL );
+            fillTreeStats( ts );
+        }
+    }
+    
 
 };
+
+
+// template< class GV >
+// std::ostream& operator<< ( std::ostream& out, typename Node<GV>::TreeStats& ts ) {
+//     
+//     out << "Number of Nodes                     " << ts.numNodes           << std::endl;
+//     out << "Number of Leafs                     " << ts.numLeafs           << std::endl << std::endl;
+//             
+//     out << "Minimum Level                       " << ts.minLevel           << std::endl;
+//     out << "Average Level                       " << ts.aveLevel           << std::endl;
+//     out << "Maximum Level                       " << ts.maxLevel           << std::endl << std::endl;
+//     
+//     out << "Minimum number of Vertices per Node " << ts.minVertices        << std::endl;
+//     out << "Average number of Vertices per Node " << ts.aveVertices        << std::endl;
+//     out << "Maximum number of Vertices per Node " << ts.maxVertices        << std::endl << std::endl;
+//     
+//     out << "Minimum number of Entities per Leaf " << ts.minEntitiesPerLeaf << std::endl;
+//     out << "Average number of Entities per Leaf " << ts.aveEntitiesPerLeaf << std::endl;
+//     out << "Maximum number of Entities per Leaf " << ts.maxEntitiesPerLeaf << std::endl;
+//     
+//     return out;
+// }
 
 
 }

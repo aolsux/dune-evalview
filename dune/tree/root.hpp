@@ -59,6 +59,7 @@ protected:
 
     
     typedef typename Node<GV>::Vertex           Vertex;
+    typedef typename Traits::Real               Real;
     typedef typename Traits::Entity             Entity;
     typedef typename Traits::EntitySeed         EntitySeed;
     typedef typename Traits::GridView           GridView;
@@ -128,6 +129,17 @@ public:
         return LevelView<GridView>( *this, level );
     }
 
+    
+    void printTreeStats( std::ostream& out ) const {
+        typename Node<GridView>::TreeStats ts;
+        this->fillTreeStats(ts);
+        
+        ts.aveLevel           /= static_cast<Real>( ts.numNodes );
+        ts.aveVertices        /= static_cast<Real>( ts.numNodes );
+        ts.aveEntitiesPerLeaf /= static_cast<Real>( ts.numLeafs );
+        
+        ts.operator<<(out) << std::endl;
+    }
 };
 
 

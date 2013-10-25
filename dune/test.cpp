@@ -587,6 +587,9 @@ public:
         }
 
         integrate( view, fieldH );
+        
+        std::cout << CE_STATUS <<  "k-d-Tree statistics"<< CE_RESET <<  std::endl;
+        root.printTreeStats( std::cout );
     }
 
     void writeVTK( std::string path ) {
