@@ -36,7 +36,7 @@
 #include <cstring>
 #include <vector>
 
-// #include <error/matherror.hpp>
+#include <error/matherror.hpp>
 #include <math/smallmatrix.hpp>
 #include <utils/fastmemcpy.h>
 

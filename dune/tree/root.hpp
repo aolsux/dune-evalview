@@ -40,6 +40,7 @@
 #include <tree/node.hpp>
 #include <tree/leafview.hpp>
 #include <tree/levelview.hpp>
+#include <error/duneerror.hpp>
 
 
 
@@ -92,6 +93,7 @@ public:
         // create container of all entity seeds
         for( auto e = gridview.template begin<0>(); e != gridview.template end<0>(); ++e ) {
             _entities.push_back( e->seed() );
+            const unsigned idx = _entities.size()-1;
             auto geo = e->geometry();
             
             auto& gidSet    = _gridView.grid().globalIdSet();
@@ -115,7 +117,7 @@ public:
 
                 // store global coordinates of all vertices
                 _v->_global = gl;
-                _v->_entity_seed.push_back( &(_entities.back()) );
+                _v->_entity_seed.push_back( idx );
             }
         }
 
@@ -162,20 +164,18 @@ public:
 //         if ( !node         ) return EntityPointer();
 //         if ( !node->_empty ) return EntityPointer();
 #endif
-
         // iterate cells and return containing cell
         auto xg = fem::asFieldVector( x );
-        for ( auto es : node->vertex(0)->_entity_seed ) {
-            const EntityPointer ep( _grid.entityPointer( *es ) );
+        for ( auto es = node->vertex(0)->_entity_seed.begin(); es != node->vertex(0)->_entity_seed.end(); ++es ) {
+            const EntityPointer ep( _grid.entityPointer( _entities[*es] ) );
             const Entity&   e   = *ep; 
             const auto&     geo = e.geometry();   
             const auto&     gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
             const auto      xl  = geo.local( xg );
-            if ( gre.checkInside( xl ) )
-                return ep;            
+            if ( gre.checkInside( xl ) ) return ep;
         }
         
-        throw ;
+        throw GridError( "Global coordinates are outside the grid!", __ERROR_INFO__ );
     }    
 };
 

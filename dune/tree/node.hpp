@@ -78,8 +78,8 @@ protected:
 
     struct Vertex
     {
-        std::vector<const EntitySeed*>   _entity_seed;
-        LinaVector                       _global;
+        std::vector<unsigned>   _entity_seed;
+        LinaVector              _global;
         
         Vertex() :
             _global( 0. )
