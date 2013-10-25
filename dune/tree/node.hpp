@@ -108,7 +108,16 @@ protected:
 
     //TODO: we probably dont need it.
     Node( const Node<GridView>* parent, const GridView& gv) :
-        _parent(parent), _gridView(gv) {}
+        _parent(parent), 
+        _child({NULL, NULL}), 
+        _gridView(gv), 
+        _orientation(0), 
+        _normal(0.), 
+        _level(0), 
+        _isLeaf(false) 
+    {
+        _normal(_orientation) = 1.;
+    }
 
     bool left(const LinaVector& p)  const { return math::dot( ( p-_bounding_box.center ), _normal ) < 0; }
     bool right(const LinaVector& p) const { return !left( p ); }
