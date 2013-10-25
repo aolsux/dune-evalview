@@ -570,6 +570,8 @@ public:
         EstimationAdaptation    ea(grid,gfs,ree,0.5,0.0,1,maxLevel);
         GridAdaptor             gra(grid,gfs,ea,proj);
 
+        tree::Root< GridView >  root( view );
+        
         BCExt                   g( view );
 
         for ( unsigned k = 0; k < maxLevel; k++ ) {
@@ -665,7 +667,7 @@ template< typename SetupTraits >
 inline void compute() {
     Dune::FieldVector<typename SetupTraits::Coord, SetupTraits::dimw> lowerLeft (-1. );
     Dune::FieldVector<typename SetupTraits::Coord, SetupTraits::dimw> upperRight( 1. );
-    Dune::array<unsigned int, SetupTraits::dim>              elements;
+    Dune::array<unsigned int, SetupTraits::dim>                        elements;
     elements.fill(9 - 2*SetupTraits::dim);
 
     Dune::shared_ptr< typename SetupTraits::GridType >    pgrid    = SetupTraits::createGrid(lowerLeft, upperRight, elements);

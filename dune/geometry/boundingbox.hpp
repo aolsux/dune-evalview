@@ -35,7 +35,7 @@
 #include <math/helper.hpp>
 #include <math/shortvector.hpp>
 
-namespace grid {
+namespace geometry {
  
 template< typename T, unsigned dim >
 class BoundingBox {

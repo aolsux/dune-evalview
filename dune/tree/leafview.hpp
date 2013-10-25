@@ -31,37 +31,14 @@
 //**************************************************************************************//
 
 #pragma once
-
-
-#include <boost/serialization/serialization.hpp>
-#include <boost/serialization/binary_object.hpp>
-#include <boost/serialization/array.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
-#include <boost/serialization/list.hpp>
-#include <boost/concept_check.hpp>
-
-#include <utils/utils.hpp>
-#include <math/shortvector.hpp>
-// #include <math/boundingbox.hpp>
-// #include <math/math.hpp>
-// #include <math/cubemesh.hpp>
-// #include <math/boundingbox.hpp>
-// #include <error/dataerror.h>
-
-#include <fem/dune.h>
-#include <fem/setuptraits.hpp>
-#include <tree/node.hpp>
 #include <tree/root.hpp>
 
-#include <vector>
-#include <deque>
 
-#include <vtkCellArray.h>
-#include <vtkSmartPointer.h>
-#include <vtkPolyLine.h>
-#include <vtkXMLPolyDataWriter.h>
-#include <vtkPolyData.h>
-#include <vtkLine.h>
-#include <vtkLineSource.h>
+namespace tree {
+
+class LeafView {
+  LeafView() = delete;
+protected:
+  LeafView(const Root& root);
+};
+}

@@ -32,13 +32,16 @@
 
 #pragma once
 
-#include <node.hpp>
-#include <leafview.hpp>
-#include <levelview.hpp>
+#include <vector>
+#include <map>
+
+#include <tree/node.hpp>
+#include <tree/leafview.hpp>
+#include <tree/levelview.hpp>
 
 
 
-namespace evalview {
+namespace tree {
 
 
 class LeafView;

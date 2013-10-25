@@ -32,10 +32,10 @@
 
 #pragma once
 
-#include <math/boundingbox.hpp>
+#include <geometry/boundingbox.hpp>
 #include <assert.h>
 
-namespace evalview {
+namespace tree {
 
 
 
@@ -45,17 +45,28 @@ protected:
     struct Traits {
         typedef GV                               GridView;
         typedef typename GridView::GridType      GridType;
-        typedef typename GridView::ctype         Real;
-        enum { dim = GridType::dimension, dimw = GridType::dimensionworld};
+        enum { 
+            dim  = GridType::dimension, 
+            dimw = GridType::dimensionworld
+        };       
+                
+        typedef typename GridView::ctype                    Real;
+        typedef geometry::BoundingBox< typename Real, dim > BoundingBox;
+        
+        typedef typename GridView::EntitySeed               EntitySeed;
     };
 
-    typedef math::BoundingBox<Traits::Real,Traits::dim> BoundingBox;
-
-    enum {dim = Traits::dim};
+    typedef typename Traits::Real        Real;
+    typedef typename Traits::BoundingBox BoundingBox;
+    
+    enum {
+        dim = Traits::dim, 
+        dimw = Traits::dimw
+    };
 
     struct Vertex
     {
-        std::vector<EntitySeed&> _element_ids;
+        std::vector<typename Traits::EntitySeed&> _element_ids;
         unsigned _id;
         unsigned _idx;
         shortvector<real,dim> _global;
@@ -73,27 +84,16 @@ protected:
     };
 
 protected:
-    Node<GV>*                    _parent;
-    Node* _child[2];
-
-    std::vector<Vertex& >        _vertex;
-
-    typename Traits::GridView&   _gridView;
-
-    BoundingBox                  _bounding_box;
-
-    // the normal of the plane that splits this node
-    shortvector<real,dim>        _normal;
-
-    // the dimension that is split by this node
-    unsigned                     _orientation;
-
-    // the depth of the node in the tree
-    unsigned                     _level;
-
-    bool                         _isLeaf;
-
-
+    Node<GV>*                       _parent;
+    Node<GV>*                       _child[2];
+    std::vector< Vertex& >          _vertex;
+    typename Traits::GridView&      _gridView;
+    typename Traits::BoundingBox    _bounding_box;
+    math::ShortVector<Real,dim>     _normal;            //!> the normal of the plane that splits this node    
+    unsigned                        _orientation;       //!> the dimension that is split by this node
+    unsigned                        _level;             //!> the depth of the node in the tree
+    bool                            _isLeaf;
+    
 protected:
     Node() = delete;
 
@@ -121,7 +121,7 @@ protected:
         std::vector<unsigned> l,r;
         for(unsigned k : _vertex_ids)
         {
-            assert(k < s,"index out of bounds");
+            assert(k < s);
             if(left(p[k]))
                 l.push_back(k);
             else
@@ -135,8 +135,8 @@ protected:
 
     void split()
     {
-        assert(_child[0] == NULL, "Child 0 exists!" );
-        assert(_child[1] == NULL, "Child 1 exists!" );
+        assert(_child[0] == NULL );
+        assert(_child[1] == NULL );
         // construct the two childs
         _child[0] = new Node(this, _bounding_box.split(_orientation,true), _level+1);
         _child[1] = new Node(this, _bounding_box.split(_orientation,false), _level+1);

@@ -1,6 +1,5 @@
 //**************************************************************************************//
 //     AUTHOR: Malik Kirchner "malik.kirchner@gmx.net"                                  //
-//             Martin Rückl "martin.rueckl@physik.hu-berlin.de"                         //
 //                                                                                      //
 //     This program is free software: you can redistribute it and/or modify             //
 //     it under the terms of the GNU General Public License as published by             //
@@ -29,39 +28,47 @@
 //     Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.       //
 //                                                                                      //
 //**************************************************************************************//
-
+/*! \file */ 
 #pragma once
 
+#include <error/baseerror.hpp>
 
-#include <boost/serialization/serialization.hpp>
-#include <boost/serialization/binary_object.hpp>
-#include <boost/serialization/array.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
-#include <boost/serialization/list.hpp>
-#include <boost/concept_check.hpp>
+class MathError : public BaseError {
+public:
+    MathError ( const char* fc, const char* f, const int l ) : BaseError( fc, f, l ) {}
+    
+    virtual const char* what() const noexcept {
+        std::string msg = "Math error in " + where();
+        return msg.c_str();
+    }
+};
 
-#include <utils/utils.hpp>
-#include <math/shortvector.hpp>
-// #include <math/boundingbox.hpp>
-// #include <math/math.hpp>
-// #include <math/cubemesh.hpp>
-// #include <math/boundingbox.hpp>
-// #include <error/dataerror.h>
+class VectorLengthError : public BaseError {
+public:
+    VectorLengthError( const char* fc, const char* f, const int l ) : BaseError( fc, f, l ) {}
+    
+    virtual const char* what() const noexcept {
+        std::string msg = "Vectors have different length! " + where();
+        return msg.c_str();
+    }
+};
 
-#include <fem/dune.h>
-#include <fem/setuptraits.hpp>
-#include <tree/node.hpp>
-#include <tree/root.hpp>
+class MatrixDimensionError : public BaseError {
+public:
+    MatrixDimensionError( const char* fc, const char* f, const int l ) : BaseError( fc, f, l ) {}
+    
+    virtual const char* what() const noexcept {
+        std::string msg = "Matrices have incompatible dimension! " + where();
+        return msg.c_str();
+    }
+};
 
-#include <vector>
-#include <deque>
-
-#include <vtkCellArray.h>
-#include <vtkSmartPointer.h>
-#include <vtkPolyLine.h>
-#include <vtkXMLPolyDataWriter.h>
-#include <vtkPolyData.h>
-#include <vtkLine.h>
-#include <vtkLineSource.h>
+class TensorDimensionError : public BaseError {
+public:
+    TensorDimensionError( const char* fc, const char* f, const int l ) : BaseError( fc, f, l ) {}
+    
+    virtual const char* what() const noexcept {
+        std::string msg = "Tensors have incompatible dimension! " + where();
+        return msg.c_str();
+    }
+};

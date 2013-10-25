@@ -49,7 +49,7 @@ extern "C" {
 
 #define SHORT_VECTOR_INIT_ZERO
 
-//namespace math {
+namespace math {
 
 /** @addtogroup ShortVector
  *
@@ -325,7 +325,7 @@ inline const ShortVector< T, N > operator / ( const ShortVector< T, N >& A, cons
  * Scalar product \f$ \left<\cdot,\cdot\right> : \{a, b\}\in R^n \times R^n \rightarrow c\in R, \quad c = \sum_k\, a_k b_k \f$
  *****************************************************************************************/
 template< typename T, unsigned N >
-inline const T scal( const ShortVector< T, N >& A, const ShortVector< T, N >& B ) {
+inline const T dot( const ShortVector< T, N >& A, const ShortVector< T, N >& B ) {
     T C = A.data[0]*B.data[0];
     for ( unsigned k = 1; k < N; k++ )
         C += A.data[k]*B.data[k];
@@ -336,7 +336,7 @@ inline const T scal( const ShortVector< T, N >& A, const ShortVector< T, N >& B 
 // * Scalar product (float) \f$ \left<\cdot,\cdot\right> : \{a, b\}\in R^n \times R^n \rightarrow c\in R, \quad c = \sum_k\, a_k b_k \f$
 // *****************************************************************************************/
 // template< unsigned N >
-// inline const float scal( const ShortVector< float, N >& A, const ShortVector< float, N >& B ) {
+// inline const float dot( const ShortVector< float, N >& A, const ShortVector< float, N >& B ) {
 //     const __m128 aux = _mm_set_ps(0.f, 0.f, 0.f, 0.f);
 //
 //
@@ -348,7 +348,7 @@ inline const T scal( const ShortVector< T, N >& A, const ShortVector< T, N >& B 
 // }
 
 /*!***************************************************************************************
- * Scalar product \f$ \times : \{a, b\}\in R^3 \times R^3 \rightarrow c\in R^3, \quad c_i = \sum_{j,k}\,  a_j b_k \, \varepsilon^{ijk} \f$
+ * Cross product \f$ \times : \{a, b\}\in R^3 \times R^3 \rightarrow c\in R^3, \quad c_i = \sum_{j,k}\,  a_j b_k \, \varepsilon^{ijk} \f$
  *****************************************************************************************/
 template< typename T >
 inline const ShortVector< T, 3 > cross( const ShortVector< T, 3 >& A, const ShortVector< T, 3 >& B ) {
@@ -438,4 +438,4 @@ inline std::ostream& operator<< ( std::ostream& out, const ShortVector<T, N>& v 
 
 
 /** @} */
-//}
+}
