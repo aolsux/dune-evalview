@@ -1,5 +1,6 @@
 //**************************************************************************************//
 //     AUTHOR: Malik Kirchner "malik.kirchner@gmx.net"                                  //
+//             Martin Rückl "martin.rueckl@physik.hu-berlin.de"                         //
 //                                                                                      //
 //     This program is free software: you can redistribute it and/or modify             //
 //     it under the terms of the GNU General Public License as published by             //
@@ -28,60 +29,21 @@
 //     Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.       //
 //                                                                                      //
 //**************************************************************************************//
-/*! \file */ 
+
 #pragma once
 
-#include <cmath>
-#include <error/matherror.hpp>
+#include <fem/dune.h>
+#include <math/shortvector.hpp>
 
-namespace math {
 
-/** @addtogroup MathHelper
- *  
- *  @{
- */
+namespace fem {
 
-// inline const unsigned biggest2( const unsigned a ) {
-//     if ( (a == 0) || (a == 1) ) return 0;
-//     unsigned k = 0;
-//     unsigned b = a;
-//     while ( b > 0 ) {
-//         b >> 1;
-//         k++;
-//     }
-//     return k;
-// }
- 
-template < typename T > 
-inline const T pow( const T b, const unsigned e ) {
-    T aux = 1.;
-    for ( unsigned k = 0; k < e; k++ )
-        aux *= b;
-    return aux;
+template< typename BT, unsigned dim >
+inline const math::ShortVector<BT, dim> asShortVector( const Dune::FieldVector<BT, dim>& fv ) {
+    math::ShortVector<BT, dim> res;
+    for ( unsigned k = 0; k < dim; k++ )
+        res(k) = fv[k];
+    return res;       
 }
 
-//Compute product of all parameters
-template < int ...P, typename T = int >
-inline const T prod() {
-    T res         = static_cast<T>(1);
-    T elemArray[] = {P...};
-    for ( unsigned k = 0; k < sizeof...(P); k++ )
-        res*= static_cast<T>(elemArray[k]);
-    return res;
-}
-
-//All parameters equal?
-template < int ...P >
-inline const bool equal() {
-    bool res = true;
-    int elemArray[] = {P...};
-    for ( unsigned k = 1; k < sizeof...(P); k++ )
-        res &= elemArray[k] == elemArray[0];
-    return res;
-}
-
-
-
-
-/** @} */
 }

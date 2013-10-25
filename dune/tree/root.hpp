@@ -36,6 +36,7 @@
 #include <vector>
 #include <map>
 
+#include <fem/helper.hpp>
 #include <tree/node.hpp>
 #include <tree/leafview.hpp>
 #include <tree/levelview.hpp>
@@ -97,27 +98,21 @@ public:
             auto& gidxSet   = _gridView.grid().leafIndexSet();
             
             for ( unsigned k = 0; k < geo.corners(); k++ ) {
-                auto g = geo.corner(k);
-                typename Traits::LinaVector gl;
-                for(unsigned u = 0; u < dim; u++)
-                    gl(u) = g[u];
+                typename Traits::LinaVector gl = fem::asShortVector<Real, dim>( geo.corner(k) ) ;
                 
                 Vertex* _v = NULL;
                 for ( auto vl = _l_vertex.begin(); vl != _l_vertex.end(); ++vl ) {
                     if ( math::norm2((*vl)->_global - gl) < 10.*std::numeric_limits<Real>::epsilon() )
                         _v = *vl;
                 }                
-                if ( _v == NULL ) {
+                if ( _v == NULL ) { 
                     _v = new Vertex();
                     _l_vertex.push_back( _v ); // TODO: use mapping to avoid duplication!!!!
                 }
                 
 
                 // store global coordinates of all vertices
-                
-                for(unsigned u = 0; u < dim; u++)
-                    _v->_global(u) = g[u];
-
+                _v->_global = gl;
 //                 _v._id  = v.id();
 //                 _v._idx = v.idx();
                 _v->_entity_seed.push_back( &(_entities.back()) );
