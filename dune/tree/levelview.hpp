@@ -31,29 +31,30 @@
 //**************************************************************************************//
 
 #pragma once
+#include <tree/node.hpp>
 #include <tree/root.hpp>
 
 
 namespace tree {
 
+template< class GV > class Node;
 template< class GV > class Root;
     
 template< class GV > 
 class LevelView {
 public:
-  typedef foo Node;
-  std::vector<Node*> _nodes;
+  std::vector<Node<GV>*> _nodes;
   
   
   // create an iterator that resolves the double dereferencation to a single one
-  struct const_iterator : public std::vector<Node*>::const_iterator
+  struct const_iterator : public std::vector<Node<GV>*>::const_iterator
   {
-      typedef std::vector<Node*>::iterator Base;
+      typedef typename std::vector<Node<GV>*>::iterator Base;
       
-      iterator(std::vector<Node*>::iterator it) : Base(it)
+      const_iterator( typename std::vector< Node<GV>* >::iterator it ) : Base(it)
       {}
       
-      const Node& operator *() const
+      const Node<GV>& operator *() const
       {
         return *Base::operator*();
       }
@@ -74,7 +75,7 @@ protected:
     }
     
     
-    void recurse(const Node& node, unsigned level)
+    void recurse(const Node<GV>& node, unsigned level)
     {
        if(node.level() == level)
          _nodes.push_back(&node);
@@ -82,7 +83,7 @@ protected:
          //NOTE: node.child(0) returns a pointer, or NULL if no child exists
          if(node.child(0) != NULL) recurse(*node.child(0));
          if(node.child(1) != NULL) recurse(*node.child(1));
-       assert(node.level()<=level,"improper recursion limit criterion");
+       assert(node.level()<=level/*,"improper recursion limit criterion"*/);
     }
     
     
