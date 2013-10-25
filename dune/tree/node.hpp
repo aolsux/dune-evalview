@@ -131,10 +131,17 @@ protected:
     template< class Iterator >
     void put( Iterator it_begin, Iterator it_end ) {
         _vertex.clear();
-        std::copy( it_begin, it_end, _vertex.begin() );
+        
+        if ( it_begin == it_end ) {
+            _isLeaf = true;
+            return;
+        }
+        
+        for ( auto p = it_begin; p!= it_end; ++p) 
+            _vertex.push_back(*p);
 
         // abort the recursion if there is only one vertex left within this node
-        if( _vertex.size() <= 1 ) {
+        if ( _vertex.size() <= 1 ) {
             _isLeaf = true;
             return;
         }
@@ -150,8 +157,15 @@ protected:
                 r.push_back( vec );
         }
 
-        _child[0]->put( l.begin(), l.end() );
-        _child[1]->put( r.begin(), r.end() );
+        if ( l.size() > 0 ) 
+            _child[0]->put( l.begin(), l.end() );
+        else 
+            _child[0]->_isLeaf = true;
+            
+        if ( r.size() > 0 ) 
+            _child[1]->put( r.begin(), r.end() );
+        else 
+            _child[1]->_isLeaf = true;
 
     }
 
@@ -201,6 +215,7 @@ public:
     struct TreeStats {
         unsigned numNodes;
         unsigned numLeafs;
+        unsigned numVertices;
                 
         unsigned minLevel;
         Real     aveLevel;
@@ -217,6 +232,7 @@ public:
         TreeStats() : 
             numNodes( 0 ), 
             numLeafs( 0 ),         
+            numVertices( 0 ), 
             minLevel( std::numeric_limits<unsigned>::max() ), 
             maxLevel( std::numeric_limits<unsigned>::min() ), 
             aveLevel( 0. ), 
@@ -230,7 +246,8 @@ public:
         std::ostream& operator<< ( std::ostream& out ) const {
             
             out << "Number of Nodes                     " << numNodes           << std::endl;
-            out << "Number of Leafs                     " << numLeafs           << std::endl << std::endl;
+            out << "Number of Leafs                     " << numLeafs           << std::endl;
+            out << "Number of Vertices                  " << numVertices        << std::endl << std::endl;
                     
             out << "Minimum Level                       " << minLevel           << std::endl;
             out << "Average Level                       " << aveLevel           << std::endl;
@@ -250,7 +267,7 @@ public:
     
 protected:
     
-    void fillTreeStats( TreeStats& ts ) const {
+    virtual void fillTreeStats( TreeStats& ts ) const {
         ts.minLevel = std::min( ts.minLevel , _level );
         ts.maxLevel = std::max( ts.maxLevel , _level );
         ts.aveLevel += static_cast<Real>(_level);
@@ -280,28 +297,6 @@ protected:
     
 
 };
-
-
-// template< class GV >
-// std::ostream& operator<< ( std::ostream& out, typename Node<GV>::TreeStats& ts ) {
-//     
-//     out << "Number of Nodes                     " << ts.numNodes           << std::endl;
-//     out << "Number of Leafs                     " << ts.numLeafs           << std::endl << std::endl;
-//             
-//     out << "Minimum Level                       " << ts.minLevel           << std::endl;
-//     out << "Average Level                       " << ts.aveLevel           << std::endl;
-//     out << "Maximum Level                       " << ts.maxLevel           << std::endl << std::endl;
-//     
-//     out << "Minimum number of Vertices per Node " << ts.minVertices        << std::endl;
-//     out << "Average number of Vertices per Node " << ts.aveVertices        << std::endl;
-//     out << "Maximum number of Vertices per Node " << ts.maxVertices        << std::endl << std::endl;
-//     
-//     out << "Minimum number of Entities per Leaf " << ts.minEntitiesPerLeaf << std::endl;
-//     out << "Average number of Entities per Leaf " << ts.aveEntitiesPerLeaf << std::endl;
-//     out << "Maximum number of Entities per Leaf " << ts.maxEntitiesPerLeaf << std::endl;
-//     
-//     return out;
-// }
 
 
 }

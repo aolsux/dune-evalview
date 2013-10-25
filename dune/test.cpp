@@ -562,14 +562,12 @@ public:
             Dune::PDELab::interpolate( g, gfs, *f );
     }
 
-    void compute( unsigned maxLevel = 3 ) {
+    void compute( unsigned maxLevel = 1 ) {
         Projector               proj;
         ErrorEstimation         ree(gfs, fieldH, funcLop );
         EstimationAdaptation    ea(grid,gfs,ree,0.5,0.0,1,maxLevel);
         GridAdaptor             gra(grid,gfs,ea,proj);
 
-        tree::Root< GridView >  root( view );
-        
         BCExt                   g( view );
 
         for ( unsigned k = 0; k < maxLevel; k++ ) {
@@ -586,8 +584,10 @@ public:
                 localCoarsen( gra, fieldL, {&fieldL, &fieldH} );
         }
 
-        integrate( view, fieldH );
+//         integrate( view, fieldH );
         
+        std::cout << CE_STATUS <<  "building k-d-Tree ..."<< CE_RESET <<  std::endl;
+        tree::Root< GridView >  root( view );
         std::cout << CE_STATUS <<  "k-d-Tree statistics"<< CE_RESET <<  std::endl;
         root.printTreeStats( std::cout );
     }
@@ -638,7 +638,7 @@ public:
 
             typename FemLocalEvalOperator<SetupTraits>::Result du0;
             typename FemLocalEvalOperator<SetupTraits>::Result du1;
-            for ( Real t = 0.; t < 200. + .1*dt; t+=dt ) {
+            for ( Real t = 0.; t < 50. + .1*dt; t+=dt ) {
                 du0 = rhs( xo, fieldH );
 
                 vo = (1.-fr*dt)*vn - .1*dt*du0.du;

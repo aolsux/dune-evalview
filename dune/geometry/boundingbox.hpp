@@ -87,6 +87,16 @@ public:
         
         return bb;
     }
+    
+    std::ostream& operator<< ( std::ostream& out ) const {
+        
+        out << "lower corner    " << corner             << std::endl;
+        out << "higher corner   " << corner + dimension << std::endl;
+        out << "dimension       " << dimension          << std::endl;
+        out << "center          " << center             << std::endl;
+                
+        return out;
+    }
 };
     
 }

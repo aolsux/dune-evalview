@@ -86,7 +86,7 @@ public:
     Root( const GridView& gridview ) :
         Node<GV>(NULL,gridview)
     {
-
+        std::vector< Vertex* > _l_vertex;
         // create container of all entity seeds
         for( auto e = gridview.template begin<0>(); e != gridview.template end<0>(); ++e ) {
             _entities.push_back( e->seed() );
@@ -108,13 +108,15 @@ public:
                 _v->_entity_seed.push_back( &(_entities.back()) );
 
                 _bounding_box.append(_v->_global);                
-                _vertex.push_back( _v );                     // TODO: use mapping to avoid duplication!!!!
+                _l_vertex.push_back( _v );                     // TODO: use mapping to avoid duplication!!!!
             }
         }
 
-        split();
+        std::cout << "Bounding box\n" ; _bounding_box.operator<<(std::cout) << std::endl;
+        std::cout << "Number of vertices " << _l_vertex.size() << std::endl;
+        
         // generate list of vertices
-        this->put( _vertex.begin(), _vertex.end() );
+//         this->put( _l_vertex.begin(), _l_vertex.end() );
     }
 
      // iterate over all leafs of the node
@@ -130,14 +132,18 @@ public:
     }
 
     
-    void printTreeStats( std::ostream& out ) const {
-        typename Node<GridView>::TreeStats ts;
-        this->fillTreeStats(ts);
+    virtual void fillTreeStats( typename Node<GridView>::TreeStats& ts ) const {
+        Node<GV>::fillTreeStats(ts);
         
+        ts.numVertices         = _vertex.size();
         ts.aveLevel           /= static_cast<Real>( ts.numNodes );
         ts.aveVertices        /= static_cast<Real>( ts.numNodes );
-        ts.aveEntitiesPerLeaf /= static_cast<Real>( ts.numLeafs );
-        
+        ts.aveEntitiesPerLeaf /= static_cast<Real>( ts.numLeafs );    
+    }
+    
+    void printTreeStats( std::ostream& out ) const {
+        typename Node<GridView>::TreeStats ts;
+        fillTreeStats(ts);
         ts.operator<<(out) << std::endl;
     }
 };
