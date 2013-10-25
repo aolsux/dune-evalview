@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <utils/utils.hpp>
 #include <geometry/boundingbox.hpp>
 #include <assert.h>
 
@@ -85,10 +86,10 @@ protected:
     };
 
 protected:
-    Node<GridView>*                 _parent;
+    const Node<GridView>*           _parent;
     Node<GridView>*                 _child[2];
     std::vector< const Vertex* >    _vertex;
-    GridView&                       _gridView;
+    const GridView&                 _gridView;
     BoundingBox                     _bounding_box;
     LinaVector                      _normal;            //!> the normal of the plane that splits this node    
     unsigned                        _orientation;       //!> the dimension that is split by this node
@@ -99,7 +100,7 @@ protected:
     Node() = delete;
 
     //TODO: we probably dont need it.
-    Node(Node<GridView>* parent, const GridView& gv) :
+    Node( const Node<GridView>* parent, const GridView& gv) :
         _parent(parent), _gridView(gv) {}
 
     bool left(const LinaVector& p)  const { return math::dot( ( p-_bounding_box.center ), _normal ) < 0; }
@@ -144,15 +145,16 @@ protected:
 
 public:
 
-    Node( const Node& node ) = delete;
+    Node( const Node<GridView>& node ) = delete;
 
-    Node( const Node* parent, const BoundingBox& box, unsigned level) :
+    Node( const Node<GridView>* parent, const BoundingBox& box, unsigned level) :
         _parent(parent),
+        _gridView(parent->_gridView), 
         _level(level),
         _bounding_box(box),
         _normal(0.),
-        _orientation(level%dim),
-        _child({NULL,NULL})
+        _orientation(level%dim), 
+        _child( {NULL, NULL} )
     {
         _normal(_orientation) = 1.;
     }

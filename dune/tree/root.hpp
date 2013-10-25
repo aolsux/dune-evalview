@@ -46,9 +46,6 @@ namespace tree {
 
 template< class GV >
 class Root : public Node<GV> {
-//     friend LeafView;
-//     friend LevelView;
-
 public:
     typedef typename Node<GV>::Traits Traits;
     
@@ -83,7 +80,7 @@ public:
     Root( const Root<GridView>& root ) {};
 
     Root( const GridView& gridview ) :
-        Node<GV>(NULL,gridview)/*, _father(NULL), _gridview(gridview)*/
+        Node<GV>(NULL,gridview)
     {
 
         // create container of all entity seeds
