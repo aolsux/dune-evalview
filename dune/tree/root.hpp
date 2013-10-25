@@ -91,7 +91,8 @@ public:
             _entities.push_back( e->seed() );
             auto geo = e->geometry();
             
-            auto& gidSet = _gridView.grid().globalIdSet();
+            auto& gidSet    = _gridView.grid().globalIdSet();
+            auto& gidxSet   = _gridView.grid().leafIndexSet();
             
             for ( unsigned k = 0; k < geo.corners(); k++ ) {
                 Vertex* _v = new Vertex;
