@@ -369,7 +369,7 @@ inline const ShortVector< T, 3 > cross( const ShortVector< T, 3 >& A, const Shor
  *****************************************************************************************/
 template< typename T >
 inline const T triple( const ShortVector< T, 3 >& A, const ShortVector< T, 3 >& B, const ShortVector< T, 3 >& C ) {
-    return scal( A, cross(B,C) );
+    return dot( A, cross(B,C) );
 }
 
 /*!***************************************************************************************
@@ -377,7 +377,7 @@ inline const T triple( const ShortVector< T, 3 >& A, const ShortVector< T, 3 >& 
  *****************************************************************************************/
 template< typename T, unsigned N >
 inline const T norm2( const ShortVector< T, N >& A ) {
-    return scal(A,A);
+    return dot(A,A);
 }
 
 /*!***************************************************************************************
@@ -385,7 +385,7 @@ inline const T norm2( const ShortVector< T, N >& A ) {
  *****************************************************************************************/
 template< typename T, unsigned N >
 inline const T norm( const ShortVector< T, N >& A ) {
-    return sqrt(scal(A,A));
+    return sqrt(dot(A,A));
 }
 
 /*!***************************************************************************************

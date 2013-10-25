@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <limits>
 #include <vector>
 #include <map>
 
@@ -96,10 +97,24 @@ public:
             auto& gidxSet   = _gridView.grid().leafIndexSet();
             
             for ( unsigned k = 0; k < geo.corners(); k++ ) {
-                Vertex* _v = new Vertex;
+                auto g = geo.corner(k);
+                typename Traits::LinaVector gl;
+                for(unsigned u = 0; u < dim; u++)
+                    gl(u) = g[u];
+                
+                Vertex* _v = NULL;
+                for ( auto vl = _l_vertex.begin(); vl != _l_vertex.end(); ++vl ) {
+                    if ( math::norm2((*vl)->_global - gl) < 10.*std::numeric_limits<Real>::epsilon() )
+                        _v = *vl;
+                }                
+                if ( _v == NULL ) {
+                    _v = new Vertex();
+                    _l_vertex.push_back( _v ); // TODO: use mapping to avoid duplication!!!!
+                }
+                
 
                 // store global coordinates of all vertices
-                auto g = geo.corner(k);
+                
                 for(unsigned u = 0; u < dim; u++)
                     _v->_global(u) = g[u];
 
@@ -108,7 +123,7 @@ public:
                 _v->_entity_seed.push_back( &(_entities.back()) );
 
                 _bounding_box.append(_v->_global);                
-                _l_vertex.push_back( _v );                     // TODO: use mapping to avoid duplication!!!!
+                
             }
         }
 
@@ -116,7 +131,7 @@ public:
         std::cout << "Number of vertices " << _l_vertex.size() << std::endl;
         
         // generate list of vertices
-//         this->put( _l_vertex.begin(), _l_vertex.end() );
+        this->put( _l_vertex.begin(), _l_vertex.end() );
     }
 
      // iterate over all leafs of the node

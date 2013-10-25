@@ -131,12 +131,7 @@ protected:
     template< class Iterator >
     void put( Iterator it_begin, Iterator it_end ) {
         _vertex.clear();
-        
-        if ( it_begin == it_end ) {
-            _isLeaf = true;
-            return;
-        }
-        
+
         for ( auto p = it_begin; p!= it_end; ++p) 
             _vertex.push_back(*p);
 
@@ -183,16 +178,22 @@ public:
     Node( const Node<GridView>& node ) = delete;
     Node& operator = ( const Node<GridView>& node ) = delete;
 
-    Node( const Node<GridView>* parent, const BoundingBox& box, unsigned level) :
+    Node( const Node<GridView>* parent, const BoundingBox& box, const unsigned level) :
         _parent(parent),
         _gridView(parent->_gridView), 
         _level(level),
         _bounding_box(box),
         _normal(0.),
-        _orientation((dim+level%dim)%dim),                   // cope with possibly negative level-numbers
+        _orientation(level%dim),
         _child( {NULL, NULL} )
     {
         _normal( _orientation ) = 1.;
+//         std::cout << "level         "   << _level << std::endl;
+//         std::cout << "orientation   "   << _orientation << std::endl;
+//         std::cout << "boundingbox\n"; _bounding_box.operator<<(std::cout);
+//         std::cout << "normal        "   << _normal << std::endl;
+        
+        if ( level > 1000 ) throw;
     }
 
     virtual ~Node() {
@@ -291,7 +292,8 @@ protected:
         } else {
             assert( _child[0] != NULL );
             assert( _child[1] != NULL );
-            fillTreeStats( ts );
+            _child[0]->fillTreeStats( ts );
+            _child[1]->fillTreeStats( ts );
         }
     }
     

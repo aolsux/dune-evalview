@@ -55,7 +55,7 @@ public:
     {
     }
     
-    BoundingBox( const BoundingBox< T, dim >& bb ) : dimension(bb.dimension), corner(bb.corner) {}
+    BoundingBox( const BoundingBox< T, dim >& bb ) : dimension(bb.dimension), corner(bb.corner), center(bb.center) {}
     
     const bool isInside( const math::ShortVector< T, dim >& p ) const {
         const math::ShortVector< T, dim > aux = p - corner;
@@ -84,6 +84,8 @@ public:
         bb.dimension(orientation) *= .5;
         if ( !left )
             bb.corner(orientation) += bb.dimension(orientation);
+        
+        bb.center = bb.corner + .5*bb.dimension;
         
         return bb;
     }

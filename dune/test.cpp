@@ -562,7 +562,7 @@ public:
             Dune::PDELab::interpolate( g, gfs, *f );
     }
 
-    void compute( unsigned maxLevel = 1 ) {
+    void compute( unsigned maxLevel = 3 ) {
         Projector               proj;
         ErrorEstimation         ree(gfs, fieldH, funcLop );
         EstimationAdaptation    ea(grid,gfs,ree,0.5,0.0,1,maxLevel);
