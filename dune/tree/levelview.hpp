@@ -40,11 +40,54 @@ template< class GV > class Root;
     
 template< class GV > 
 class LevelView {
+public:
+  typedef foo Node;
+  std::vector<Node*> _nodes;
+  
+  
+  // create an iterator that resolves the double dereferencation to a single one
+  struct const_iterator : public std::vector<Node*>::const_iterator
+  {
+      typedef std::vector<Node*>::iterator Base;
+      
+      iterator(std::vector<Node*>::iterator it) : Base(it)
+      {}
+      
+      const Node& operator *() const
+      {
+        return *Base::operator*();
+      }
+  };
+  
+  // make the view const iterable
+  const_iterator begin() const     { return const_iterator(_nodes.begin());}
+  const_iterator end() const       { return const_iterator(_nodes.end());}
+  
 private:
     LevelView() = delete;
 protected:
-    LevelView(const Root<GV>& root)
-    {}
+  
+   // NOTE: the level argument is a possible candidate for an additional template argument
+    LevelView(const Root<GV>& root, unsigned level)
+    {
+       recurse(root,level);
+    }
+    
+    
+    void recurse(const Node& node, unsigned level)
+    {
+       if(node.level() == level)
+         _nodes.push_back(&node);
+       else
+         //NOTE: node.child(0) returns a pointer, or NULL if no child exists
+         if(node.child(0) != NULL) recurse(*node.child(0));
+         if(node.child(1) != NULL) recurse(*node.child(1));
+       assert(node.level()<=level,"improper recursion limit criterion");
+    }
+    
+    
+      
+    
 };
 
 
