@@ -42,14 +42,16 @@ class BoundingBox {
 public:
     math::ShortVector< T, dim > dimension;
     math::ShortVector< T, dim > corner;
+    math::ShortVector< T, dim > center;
     
     BoundingBox() {            
         dimension = 1.;
         corner    = 0.;
+        center    = corner + .5*dimension;
     }
     
     BoundingBox( const math::ShortVector< T, dim >& c0, const math::ShortVector< T, dim >& d ) :
-        dimension(d), corner(c0)
+        dimension(d), corner(c0), center( center = corner + .5*dimension )
     {
     }
     
@@ -58,8 +60,22 @@ public:
     const bool isInside( const math::ShortVector< T, dim >& p ) const {
         const math::ShortVector< T, dim > aux = p - corner;
         for ( unsigned k = 0; k < dim; k++ ) 
-            if ( aux[k] > dimension[k] ) return false;
+            if ( aux(k) > dimension(k) ) return false;
         return true;
+    }
+    
+    void append( const math::ShortVector< T, dim >& p ) {
+        const math::ShortVector< T, dim > aux = p - corner;
+        for ( unsigned k = 0; k < dim; k++ ) {
+            if ( aux(k) < 0. ) {
+                dimension(k) -= aux(k);
+                corner(k)    += aux(k);
+            } else {
+                dimension(k) = std::max( aux(k), dimension(k));
+            }
+        }
+        
+        center = corner + .5*dimension;
     }
     
     const BoundingBox<T, dim> split( const unsigned orientation, const bool left ) const {

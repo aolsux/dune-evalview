@@ -73,7 +73,7 @@ protected:
 
     struct Vertex
     {
-        std::vector<const EntitySeed*>   _element_ids;
+        std::vector<const EntitySeed*>   _entity_seed;
         LinaVector                       _global;
         unsigned                         _id;
         unsigned                         _idx;
@@ -82,6 +82,13 @@ protected:
             _global( 0. ), 
             _id    ( 0  ), 
             _idx   ( 0  ) {}
+            
+        
+        Vertex( const Vertex& v ) :
+            _entity_seed (v._entity_seed ), 
+            _global      ( v._global ), 
+            _id          ( v._id  ), 
+            _idx         ( v._idx  ) {}
 
     };
 
@@ -120,10 +127,10 @@ protected:
 
         split();
 
-        std::vector< Vertex > l,r;
-        for ( auto& vec : _vertex )
+        std::vector< const Vertex* > l,r;
+        for ( auto vec : _vertex )
         {
-            if( left(vec) )
+            if( left(vec->_global) )
                 l.push_back( vec );
             else
                 r.push_back( vec );
