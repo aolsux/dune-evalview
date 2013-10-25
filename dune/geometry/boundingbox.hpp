@@ -61,6 +61,16 @@ public:
             if ( aux[k] > dimension[k] ) return false;
         return true;
     }
+    
+    const BoundingBox<T, dim> split( const unsigned orientation, const bool left ) const {
+        BoundingBox<T, dim> bb( *this );
+        
+        bb.dimension(orientation) *= .5;
+        if ( !left )
+            bb.corner(orientation) += bb.dimension(orientation);
+        
+        return bb;
+    }
 };
     
 }

@@ -36,10 +36,16 @@
 
 namespace tree {
 
-    class LevelView{
-        LevelView() = delete;
-    protected:
-        LevelView(const Root& root)
-        {}
-    };
+template< class GV > class Root;
+    
+template< class GV > 
+class LevelView {
+private:
+    LevelView() = delete;
+protected:
+    LevelView(const Root<GV>& root)
+    {}
+};
+
+
 }

@@ -41,55 +41,56 @@ namespace tree {
 
 template< class GV >
 class Node {
-protected:
+public:
     struct Traits {
-        typedef GV                               GridView;
-        typedef typename GridView::GridType      GridType;
-        enum { 
-            dim  = GridType::dimension, 
-            dimw = GridType::dimensionworld
-        };       
-                
-        typedef typename GridView::ctype                    Real;
-        typedef geometry::BoundingBox< typename Real, dim > BoundingBox;
+        typedef GV                                  GridView;
+        typedef typename GridView::Grid             GridType;
         
-        typedef typename GridView::EntitySeed               EntitySeed;
+        static constexpr unsigned                   dim         = GridView::dimension;
+        static constexpr unsigned                   dimw        = GridView::dimensionworld;               
+                
+        typedef typename GridView::ctype            Real;
+        typedef math::ShortVector< Real, dim >      LinaVector;
+        typedef geometry::BoundingBox< Real, dim >  BoundingBox;        
+        typedef typename GridType::template Codim<0>::EntitySeed    EntitySeed;
+        typedef typename GridType::template Codim<0>::Entity        Entity;
     };
 
-    typedef typename Traits::Real        Real;
-    typedef typename Traits::BoundingBox BoundingBox;
+protected:
+    typedef typename Traits::Real           Real;
+    typedef typename Traits::LinaVector     LinaVector;
+    typedef typename Traits::BoundingBox    BoundingBox;
+    typedef typename Traits::EntitySeed     EntitySeed;
+    typedef typename Traits::Entity         Entity;
+    typedef typename Traits::GridType       GridType;
+    typedef typename Traits::GridView       GridView;
     
-    enum {
-        dim = Traits::dim, 
-        dimw = Traits::dimw
-    };
+    
+    static constexpr unsigned dim     = Traits::dim;
+    static constexpr unsigned dimw    = Traits::dimw;
+    
 
     struct Vertex
     {
-        std::vector<typename Traits::EntitySeed&> _element_ids;
-        unsigned _id;
-        unsigned _idx;
-        shortvector<real,dim> _global;
-
-        template<class V>
-        Vertex(const V& v)
-        {
-            auto g = v.position(0);
-            for(unsigned u = 0; u < dim; u++)
-                _global(u) = g[u];
-            _id = v.id();
-            _idx = v.idx();
-        }
+        std::vector<const EntitySeed*>   _element_ids;
+        LinaVector                       _global;
+        unsigned                         _id;
+        unsigned                         _idx;
+        
+        Vertex() :
+            _global( 0. ), 
+            _id    ( 0  ), 
+            _idx   ( 0  ) {}
 
     };
 
 protected:
-    Node<GV>*                       _parent;
-    Node<GV>*                       _child[2];
-    std::vector< Vertex& >          _vertex;
-    typename Traits::GridView&      _gridView;
-    typename Traits::BoundingBox    _bounding_box;
-    math::ShortVector<Real,dim>     _normal;            //!> the normal of the plane that splits this node    
+    Node<GridView>*                 _parent;
+    Node<GridView>*                 _child[2];
+    std::vector< const Vertex* >    _vertex;
+    GridView&                       _gridView;
+    BoundingBox                     _bounding_box;
+    LinaVector                      _normal;            //!> the normal of the plane that splits this node    
     unsigned                        _orientation;       //!> the dimension that is split by this node
     unsigned                        _level;             //!> the depth of the node in the tree
     bool                            _isLeaf;
@@ -98,38 +99,37 @@ protected:
     Node() = delete;
 
     //TODO: we probably dont need it.
-    Node(Node* parent, const typename Traits::GridView& gv) :
+    Node(Node<GridView>* parent, const GridView& gv) :
         _parent(parent), _gridView(gv) {}
 
-    bool left(const shortvector<real,dim>& p)  const { return dot((p-_bounding_box.center),_normal)<0;     }
-    bool right(const shortvector<real,dim>& p) const { return !left(p);}
+    bool left(const LinaVector& p)  const { return math::dot( ( p-_bounding_box.center ), _normal ) < 0; }
+    bool right(const LinaVector& p) const { return !left( p ); }
 
     // vid contain indices of all vertices that reside in the space defined by boundingbox
     // p array of global space coordinates corresponding to the indices stored int vid
     // s size of p and vid TODO: remove s we dont need it
-    void put(beginIt, endIt)
+    template< class Iterator >
+    void put( Iterator it_begin, Iterator it_end )
     {
-        vertex.clear();
-        std::copy( beginIt, endIt, _vertex.begin());
+        _vertex.clear();
+        std::copy( it_begin, it_end, _vertex.begin());
 
         // abort the recursion if there is only one vertex left within this node
-        if(_vertex_ids.size()<=1)
-            return;
+        if( _vertex.size() <= 1 ) return;
 
         split();
 
-        std::vector<unsigned> l,r;
-        for(unsigned k : _vertex_ids)
+        std::vector< Vertex > l,r;
+        for ( auto& vec : _vertex )
         {
-            assert(k < s);
-            if(left(p[k]))
-                l.push_back(k);
+            if( left(vec) )
+                l.push_back( vec );
             else
-                r.push_back(k);
+                r.push_back( vec );
         }
 
-        _child[0]->put(l,p,s);
-        _child[1]->put(r,p,s);
+        _child[0]->put( l.begin(), l.end() );
+        _child[1]->put( r.begin(), r.end() );
 
     }
 

@@ -36,9 +36,15 @@
 
 namespace tree {
 
+template< class GV > class Root;
+
+template< class GV >
 class LeafView {
-  LeafView() = delete;
+private:
+    LeafView() = delete;
 protected:
-  LeafView(const Root& root);
+    LeafView(const Root<GV>& root);
 };
+
+
 }

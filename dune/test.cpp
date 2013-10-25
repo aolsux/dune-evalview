@@ -122,16 +122,14 @@ class FemLocalEvalOperator /*:
 {
 public:
     struct Result {
-        enum {
-            dim     = SetupTraits::dim,
-            dimw    = SetupTraits::dimw
-        };
+        static constexpr unsigned dim     = SetupTraits::dim;
+        static constexpr unsigned dimw    = SetupTraits::dimw;        
 
         typedef typename SetupTraits::Coord BT;
 
-        ShortVector<BT, dimw>  x;
-        BT                     u;
-        ShortVector<BT, dimw> du;
+        math::ShortVector<BT, dimw>  x;
+        BT                           u;
+        math::ShortVector<BT, dimw> du;
     };
 
 protected:
@@ -266,13 +264,13 @@ private:
 
 
 template< typename T, unsigned dim >
-inline void asShortVector( const Dune::FieldVector< T, dim >& f, ShortVector< T, dim >& v ) {
+inline void asShortVector( const Dune::FieldVector< T, dim >& f, math::ShortVector< T, dim >& v ) {
     for ( int k = 0; k < dim; k++ )
         v.data[k] = f[k];
 }
 
 template< typename T, unsigned dim >
-inline void asShortVector( Dune::FieldVector< T, dim >& f, ShortVector< T, dim >& v ) {
+inline void asShortVector( Dune::FieldVector< T, dim >& f, math::ShortVector< T, dim >& v ) {
     for ( int k = 0; k < dim; k++ )
         v.data[k] = f[k];
 }
@@ -308,11 +306,11 @@ inline void asShortVector( Dune::FieldVector< T, dim >& f, ShortVector< T, dim >
 
 template< typename BT, unsigned dim >
 struct XT {
-    ShortVector< BT, dim > x;
-    BT                     t;
+    math::ShortVector< BT, dim > x;
+    BT                           t;
 
     XT() : x(0.), t(0.) {}
-    XT( const ShortVector< BT, dim >& x_, const BT t_ ) : x(x_), t(t_) {}
+    XT( const math::ShortVector< BT, dim >& x_, const BT t_ ) : x(x_), t(t_) {}
     XT( const XT& xt ) : x(xt.x), t(xt.t) {}
 };
 
@@ -603,7 +601,7 @@ public:
         vtkwriterH.write( "lo_"+path, Dune::VTKOptions::ascii );
     }
 
-    typename FemLocalEvalOperator< SetupTraits >::Result rhs ( ShortVector<typename SetupTraits::Coord, SetupTraits::dimw>& x, const FieldU field ) {
+    typename FemLocalEvalOperator< SetupTraits >::Result rhs ( math::ShortVector<typename SetupTraits::Coord, SetupTraits::dimw>& x, const FieldU field ) {
         Dune::FieldVector<typename SetupTraits::Coord, SetupTraits::dimw> fv;
         for ( unsigned k = 0; k < SetupTraits::dimw; k++ )
             fv[k] = x(k);
@@ -626,10 +624,10 @@ public:
 
         Real    dt = .004;                                          // time step
         Real    fr = .02;                                           // friction
-        ShortVector<Real, Traits::dimw> xo( .8 );
-        ShortVector<Real, Traits::dimw> xn( .8 );
-        ShortVector<Real, Traits::dimw> vo( .04 );
-        ShortVector<Real, Traits::dimw> vn( .04 );
+        math::ShortVector<Real, Traits::dimw> xo( .8 );
+        math::ShortVector<Real, Traits::dimw> xn( .8 );
+        math::ShortVector<Real, Traits::dimw> vo( .04 );
+        math::ShortVector<Real, Traits::dimw> vn( .04 );
         vo(0) = .0;
         vn(0) = .0;
 

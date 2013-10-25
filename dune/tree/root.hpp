@@ -44,78 +44,88 @@
 namespace tree {
 
 
-class LeafView;
-class LevelView;
-
-
 template< class GV >
 class Root : public Node<GV> {
 //     friend LeafView;
 //     friend LevelView;
 
-protected:
-    using Node<GV>::_father;
-    using Node<GV>::_gridview;
-    using Node<GV>::_bounding_box;
-
+public:
     typedef typename Node<GV>::Traits Traits;
+    
+protected:
+    using Node<GV>::_parent;
+    using Node<GV>::_gridView;
+    using Node<GV>::_bounding_box;
+    using Node<GV>::split;
+    using Node<GV>::put;
 
+    
+    typedef typename Node<GV>::Vertex           Vertex;
+    typedef typename Traits::Entity             Entity;
+    typedef typename Traits::EntitySeed         EntitySeed;
+    typedef typename Traits::GridView           GridView;
+    
+    static constexpr unsigned dim     = Traits::dim;
+    static constexpr unsigned dimw    = Traits::dimw;
+    
 protected:
 
     std::vector<EntitySeed> _entities;
+    std::vector< Vertex >   _vertex;
 
 
 
     // map each vertex id to its corresponding entity index. where entity index is the
     // index of the entity seed for the container above.
-    std::map<unsigned, std::vector<unsigned>> _maping;
+    std::map< unsigned, std::vector<unsigned> > _mapping;
 
 public:
-    Root( const Root& node ) = default;
+    Root( const Root<GridView>& root ) {};
 
-    Root( const typename Traits::GridView& gridview ) :
+    Root( const GridView& gridview ) :
         Node<GV>(NULL,gridview)/*, _father(NULL), _gridview(gridview)*/
     {
 
         // create container of all entity seeds
-        for(Entity e : gridview.elements())
+        for( auto e = gridview.template begin<0>(); e != gridview.template end<0>(); ++e )
         {
-            std::size_t pos = _entities.push_back(EntitySeed(e));
+//             std::size_t pos = _entities.push_back(EntitySeed(e));
 
-            for (auto v : e.vertices())
-            {
-                Vertex& _v = _maping(v.id());
-
-                auto g = v.position(0);
-                for(unsigned u = 0; u < dim; u++)
-                    _v._global(u) = g[u];
-
-                _v._id  = v.id();
-                _v._idx = v.idx();
-                _v._element_ids.push_back(e.id());
-
-
-                _bounding_box.append(v.global());
-
-                // store global coordinates of all vertices
-            }
+//             for ( auto v : e.vertices() )
+//             {
+//                 Vertex& _v = _mapping(v.id());
+// 
+//                 auto g = v.position(0);
+//                 for(unsigned u = 0; u < dim; u++)
+//                     _v._global(u) = g[u];
+// 
+//                 _v._id  = v.id();
+//                 _v._idx = v.idx();
+//                 _v._element_ids.push_back(e.id());
+// 
+// 
+//                 _bounding_box.append(v.global());
+// 
+//                 // store global coordinates of all vertices
+//             }
         }
 
         split();
         // generate list of vertices
-        put( beginIt, endIt );
+        typedef typename std::vector< Vertex >::iterator Iterator;
+//         this->put< Iterator >( _vertex.begin(), _vertex.end() );
     }
 
      // iterate over all leafs of the node
-    LeafView leafView() const
+    LeafView<GridView> leafView() const
     {
-        return LeafView(*this);
+        return LeafView<GridView>( *this );
     }
 
      // iterate over all leafs of the node
-    LevelView levelView(unsigned level) const
+    LevelView<GridView> levelView(unsigned level) const
     {
-        return LevelView(*this,level);
+        return LevelView<GridView>( *this, level );
     }
 
 };
