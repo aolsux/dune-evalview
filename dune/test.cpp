@@ -468,6 +468,7 @@ protected:
     LinearProblemSolver     lpSolverH;
     FemEvalLOP              fleo;
     PointLocator< GridType, FemEvalLOP, typename SetupTraits::Coord > pl;
+    tree::Root< GridView >  root;
 
 
 public:
@@ -488,7 +489,8 @@ public:
         lpSolverL( gos, fieldL, solver, tol ),
         lpSolverH( gos, fieldH, solver, tol ),
         fleo     ( gfs ),
-        pl       ( grid, fleo )
+        pl       ( grid, fleo ), 
+        root     ( view )
     {
     }
 
@@ -518,6 +520,11 @@ public:
 
         // clean up
         grid.postAdapt();
+        
+        std::cout << CE_STATUS <<  "building k-d-Tree ..."<< CE_RESET <<  std::endl;
+        root.rebuild();
+        std::cout << CE_STATUS <<  "k-d-Tree statistics"<< CE_RESET <<  std::endl;
+        root.printTreeStats( std::cout );
     }
 
     void globalRefine( GridAdaptor& gra, const std::vector< FieldU* > field ) {
@@ -586,12 +593,9 @@ public:
 
 //         integrate( view, fieldH );
         
-        std::cout << CE_STATUS <<  "building k-d-Tree ..."<< CE_RESET <<  std::endl;
-        tree::Root< GridView >  root( view );
-        std::cout << CE_STATUS <<  "k-d-Tree statistics"<< CE_RESET <<  std::endl;
-        root.printTreeStats( std::cout );
+
         
-        auto ptr = root.findEntity( math::ShortVector< Real, Traits::dim >(0.) );
+//         auto ptr = root.findEntity( math::ShortVector< Real, Traits::dim >(0.) );
     }
 
     void writeVTK( std::string path ) {

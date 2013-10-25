@@ -81,17 +81,27 @@ public:
     Root( const Root<GridView>& root ) {};
     
     virtual ~Root( ) {
-        for ( auto v : _vertex )
-            safe_delete( v );
-        _vertex.clear();
+        release();
     };
 
     Root( const GridView& gridview ) :
         Node<GV>(NULL,gridview)
     {
+        build();
+    }
+
+    
+    virtual void release() {
+        Node<GV>::release();
+        for ( auto v : _vertex )
+            safe_delete( v );
+        _vertex.clear();
+    }
+    
+    void build() {
         std::vector< Vertex* > _l_vertex;
         // create container of all entity seeds
-        for( auto e = gridview.template begin<0>(); e != gridview.template end<0>(); ++e ) {
+        for( auto e = _gridView.template begin<0>(); e != _gridView.template end<0>(); ++e ) {
             _entities.push_back( e->seed() );
             const unsigned idx = _entities.size()-1;
             auto geo = e->geometry();
@@ -127,7 +137,12 @@ public:
         // generate list of vertices
         this->put( _l_vertex.begin(), _l_vertex.end() );
     }
-
+    
+    void rebuild() {
+        release();
+        build();
+    }
+    
      // iterate over all leafs of the node
     LeafView<GridView> leafView() const {
         return LeafView<GridView>( *this );

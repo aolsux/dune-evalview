@@ -195,6 +195,10 @@ public:
     }
 
     virtual ~Node() {
+        release();
+    }
+    
+    virtual void release() {
         safe_delete( _child[0] );
         safe_delete( _child[1] );
     }
