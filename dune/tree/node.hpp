@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <utils/utils.hpp>
 #include <geometry/boundingbox.hpp>
 #include <assert.h>
 
@@ -72,7 +73,7 @@ protected:
 
     struct Vertex
     {
-        std::vector<const EntitySeed*>   _element_ids;
+        std::vector<const EntitySeed*>   _entity_seed;
         LinaVector                       _global;
         unsigned                         _id;
         unsigned                         _idx;
@@ -81,14 +82,21 @@ protected:
             _global( 0. ), 
             _id    ( 0  ), 
             _idx   ( 0  ) {}
+            
+        
+        Vertex( const Vertex& v ) :
+            _entity_seed (v._entity_seed ), 
+            _global      ( v._global ), 
+            _id          ( v._id  ), 
+            _idx         ( v._idx  ) {}
 
     };
 
 protected:
-    Node<GridView>*                 _parent;
+    const Node<GridView>*           _parent;
     Node<GridView>*                 _child[2];
-    std::vector< const Vertex* >    _vertex;
-    GridView&                       _gridView;
+    std::vector< Vertex* >          _vertex;
+    const GridView&                 _gridView;
     BoundingBox                     _bounding_box;
     LinaVector                      _normal;            //!> the normal of the plane that splits this node    
     unsigned                        _orientation;       //!> the dimension that is split by this node
@@ -98,31 +106,42 @@ protected:
 protected:
     Node() = delete;
 
-    //TODO: we probably dont need it.
-    Node(Node<GridView>* parent, const GridView& gv) :
-        _parent(parent), _gridView(gv) {}
+    //Only needed for Root!
+    Node( const Node<GridView>* parent, const GridView& gv) :
+        _parent(parent), 
+        _child({NULL, NULL}), 
+        _gridView(gv), 
+        _orientation(0), 
+        _normal(0.), 
+        _level(0), 
+        _isLeaf(false) 
+    {
+        _normal(_orientation) = 1.;
+    }
 
-    bool left(const LinaVector& p)  const { return math::dot( ( p-_bounding_box.center ), _normal ) < 0; }
+    bool left(const LinaVector& p)  const { return p(_orientation) < _bounding_box.center(_orientation); }
     bool right(const LinaVector& p) const { return !left( p ); }
 
     // vid contain indices of all vertices that reside in the space defined by boundingbox
     // p array of global space coordinates corresponding to the indices stored int vid
     // s size of p and vid TODO: remove s we dont need it
     template< class Iterator >
-    void put( Iterator it_begin, Iterator it_end )
-    {
+    void put( Iterator it_begin, Iterator it_end ) {
         _vertex.clear();
-        std::copy( it_begin, it_end, _vertex.begin());
+        std::copy( it_begin, it_end, _vertex.begin() );
 
         // abort the recursion if there is only one vertex left within this node
-        if( _vertex.size() <= 1 ) return;
+        if( _vertex.size() <= 1 ) {
+            _isLeaf = true;
+            return;
+        }
 
         split();
 
-        std::vector< Vertex > l,r;
-        for ( auto& vec : _vertex )
+        std::vector< Vertex* > l,r;
+        for ( auto vec : _vertex )
         {
-            if( left(vec) )
+            if( left(vec->_global) )
                 l.push_back( vec );
             else
                 r.push_back( vec );
@@ -133,38 +152,42 @@ protected:
 
     }
 
-    void split()
-    {
-        assert(_child[0] == NULL );
-        assert(_child[1] == NULL );
+    void split() {
+        assert( _child[0] == NULL );
+        assert( _child[1] == NULL );
         // construct the two childs
-        _child[0] = new Node(this, _bounding_box.split(_orientation,true), _level+1);
-        _child[1] = new Node(this, _bounding_box.split(_orientation,false), _level+1);
+        _child[0] = new Node( this, _bounding_box.split(_orientation,true) , _level+1 );
+        _child[1] = new Node( this, _bounding_box.split(_orientation,false), _level+1 );
+        _isLeaf   = false;
     }
 
 public:
 
-    Node( const Node& node ) = delete;
+    Node( const Node<GridView>& node ) = delete;
+    Node& operator = ( const Node<GridView>& node ) = delete;
 
-    Node( const Node* parent, const BoundingBox& box, unsigned level) :
+    Node( const Node<GridView>* parent, const BoundingBox& box, unsigned level) :
         _parent(parent),
+        _gridView(parent->_gridView), 
         _level(level),
         _bounding_box(box),
         _normal(0.),
-        _orientation(level%dim),
-        _child({NULL,NULL})
+        _orientation((dim+level%dim)%dim),                   // cope with possibly negative level-numbers
+        _child( {NULL, NULL} )
     {
-        _normal(_orientation) = 1.;
+        _normal( _orientation ) = 1.;
     }
 
-    virtual ~Node()
-    {
-        safe_delete(_child[0]);
-        safe_delete(_child[1]);
+    virtual ~Node() {
+        safe_delete( _child[0] );
+        safe_delete( _child[1] );
     }
 
-    const Node* child(const unsigned i) const    {        return _child[i];    }
-
+    const Node*         child(const unsigned i) const { assert( i < 2 ); return _child[i];   }
+    const bool          isLeaf()                const { return _isLeaf;     }
+    const unsigned      level()                 const { return _level;      }
+    const unsigned      orientation()           const { return _orientation;}
+    const LinaVector    normal()                const { return _normal;     }
 
 
     // iterate over all entities of the node

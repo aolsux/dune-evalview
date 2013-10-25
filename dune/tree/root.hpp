@@ -46,15 +46,13 @@ namespace tree {
 
 template< class GV >
 class Root : public Node<GV> {
-//     friend LeafView;
-//     friend LevelView;
-
 public:
     typedef typename Node<GV>::Traits Traits;
     
 protected:
     using Node<GV>::_parent;
     using Node<GV>::_gridView;
+    using Node<GV>::_vertex;
     using Node<GV>::_bounding_box;
     using Node<GV>::split;
     using Node<GV>::put;
@@ -69,11 +67,7 @@ protected:
     static constexpr unsigned dimw    = Traits::dimw;
     
 protected:
-
-    std::vector<EntitySeed> _entities;
-    std::vector< Vertex >   _vertex;
-
-
+    std::vector<EntitySeed>     _entities;
 
     // map each vertex id to its corresponding entity index. where entity index is the
     // index of the entity seed for the container above.
@@ -81,39 +75,45 @@ protected:
 
 public:
     Root( const Root<GridView>& root ) {};
+    
+    virtual ~Root( ) {
+        for ( auto v : _vertex )
+            safe_delete( v );
+        _vertex.clear();
+    };
 
     Root( const GridView& gridview ) :
-        Node<GV>(NULL,gridview)/*, _father(NULL), _gridview(gridview)*/
+        Node<GV>(NULL,gridview)
     {
 
         // create container of all entity seeds
-        for( auto e = gridview.template begin<0>(); e != gridview.template end<0>(); ++e )
-        {
-//             std::size_t pos = _entities.push_back(EntitySeed(e));
+        for( auto e = gridview.template begin<0>(); e != gridview.template end<0>(); ++e ) {
+            _entities.push_back( e->seed() );
+            auto geo = e->geometry();
+            
+            auto& gidSet    = _gridView.grid().globalIdSet();
+            auto& gidxSet   = _gridView.grid().leafIndexSet();
+            
+            for ( unsigned k = 0; k < geo.corners(); k++ ) {
+                Vertex* _v = new Vertex;
 
-//             for ( auto v : e.vertices() )
-//             {
-//                 Vertex& _v = _mapping(v.id());
-// 
-//                 auto g = v.position(0);
-//                 for(unsigned u = 0; u < dim; u++)
-//                     _v._global(u) = g[u];
-// 
+                // store global coordinates of all vertices
+                auto g = geo.corner(k);
+                for(unsigned u = 0; u < dim; u++)
+                    _v->_global(u) = g[u];
+
 //                 _v._id  = v.id();
 //                 _v._idx = v.idx();
-//                 _v._element_ids.push_back(e.id());
-// 
-// 
-//                 _bounding_box.append(v.global());
-// 
-//                 // store global coordinates of all vertices
-//             }
+                _v->_entity_seed.push_back( &(_entities.back()) );
+
+                _bounding_box.append(_v->_global);                
+                _vertex.push_back( _v );                     // TODO: use mapping to avoid duplication!!!!
+            }
         }
 
         split();
         // generate list of vertices
-        typedef typename std::vector< Vertex >::iterator Iterator;
-//         this->put< Iterator >( _vertex.begin(), _vertex.end() );
+        this->put( _vertex.begin(), _vertex.end() );
     }
 
      // iterate over all leafs of the node
