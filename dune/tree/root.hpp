@@ -52,6 +52,7 @@ public:
 protected:
     using Node<GV>::_parent;
     using Node<GV>::_gridView;
+    using Node<GV>::_vertex;
     using Node<GV>::_bounding_box;
     using Node<GV>::split;
     using Node<GV>::put;
@@ -66,9 +67,7 @@ protected:
     static constexpr unsigned dimw    = Traits::dimw;
     
 protected:
-
     std::vector<EntitySeed>     _entities;
-    std::vector< Vertex*  >     _vertex;
 
     // map each vertex id to its corresponding entity index. where entity index is the
     // index of the entity seed for the container above.
@@ -78,9 +77,9 @@ public:
     Root( const Root<GridView>& root ) {};
     
     virtual ~Root( ) {
-        Node<GV>::~Node();
         for ( auto v : _vertex )
             safe_delete( v );
+        _vertex.clear();
     };
 
     Root( const GridView& gridview ) :

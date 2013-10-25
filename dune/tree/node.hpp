@@ -95,7 +95,7 @@ protected:
 protected:
     const Node<GridView>*           _parent;
     Node<GridView>*                 _child[2];
-    std::vector< const Vertex* >    _vertex;
+    std::vector< Vertex* >          _vertex;
     const GridView&                 _gridView;
     BoundingBox                     _bounding_box;
     LinaVector                      _normal;            //!> the normal of the plane that splits this node    
@@ -126,17 +126,16 @@ protected:
     // p array of global space coordinates corresponding to the indices stored int vid
     // s size of p and vid TODO: remove s we dont need it
     template< class Iterator >
-    void put( Iterator it_begin, Iterator it_end )
-    {
+    void put( Iterator it_begin, Iterator it_end ) {
         _vertex.clear();
-        std::copy( it_begin, it_end, _vertex.begin());
+        std::copy( it_begin, it_end, _vertex.begin() );
 
         // abort the recursion if there is only one vertex left within this node
         if( _vertex.size() <= 1 ) return;
 
         split();
 
-        std::vector< const Vertex* > l,r;
+        std::vector< Vertex* > l,r;
         for ( auto vec : _vertex )
         {
             if( left(vec->_global) )
@@ -150,8 +149,7 @@ protected:
 
     }
 
-    void split()
-    {
+    void split() {
         assert(_child[0] == NULL );
         assert(_child[1] == NULL );
         // construct the two childs
@@ -162,6 +160,7 @@ protected:
 public:
 
     Node( const Node<GridView>& node ) = delete;
+    Node& operator = ( const Node<GridView>& node ) = delete;
 
     Node( const Node<GridView>* parent, const BoundingBox& box, unsigned level) :
         _parent(parent),
@@ -175,13 +174,12 @@ public:
         _normal(_orientation) = 1.;
     }
 
-    virtual ~Node()
-    {
+    virtual ~Node() {
         safe_delete(_child[0]);
         safe_delete(_child[1]);
     }
 
-    const Node* child(const unsigned i) const    {        return _child[i];    }
+    const Node* child(const unsigned i) const { return _child[i]; }
 
 
 
