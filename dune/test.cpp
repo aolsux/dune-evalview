@@ -590,6 +590,8 @@ public:
         tree::Root< GridView >  root( view );
         std::cout << CE_STATUS <<  "k-d-Tree statistics"<< CE_RESET <<  std::endl;
         root.printTreeStats( std::cout );
+        
+        auto ptr = root.findEntity( math::ShortVector< Real, Traits::dim >(0.) );
     }
 
     void writeVTK( std::string path ) {

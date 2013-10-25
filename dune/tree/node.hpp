@@ -57,6 +57,7 @@ public:
         typedef math::ShortVector< Real, dim >      LinaVector;
         typedef geometry::BoundingBox< Real, dim >  BoundingBox;        
         typedef typename GridType::template Codim<0>::EntitySeed    EntitySeed;
+        typedef typename GridType::template Codim<0>::EntityPointer EntityPointer;
         typedef typename GridType::template Codim<0>::Entity        Entity;
     };
 
@@ -65,6 +66,7 @@ protected:
     typedef typename Traits::LinaVector     LinaVector;
     typedef typename Traits::BoundingBox    BoundingBox;
     typedef typename Traits::EntitySeed     EntitySeed;
+    typedef typename Traits::EntityPointer  EntityPointer;
     typedef typename Traits::Entity         Entity;
     typedef typename Traits::GridType       GridType;
     typedef typename Traits::GridView       GridView;
@@ -78,20 +80,16 @@ protected:
     {
         std::vector<const EntitySeed*>   _entity_seed;
         LinaVector                       _global;
-        unsigned                         _id;
-        unsigned                         _idx;
         
         Vertex() :
-            _global( 0. ), 
-            _id    ( 0  ), 
-            _idx   ( 0  ) {}
+            _global( 0. )
+        {}
             
         
         Vertex( const Vertex& v ) :
             _entity_seed (v._entity_seed ), 
-            _global      ( v._global ), 
-            _id          ( v._id  ), 
-            _idx         ( v._idx  ) {}
+            _global      (   v._global   )
+        {}
 
     };
 
@@ -100,12 +98,14 @@ protected:
     Node<GridView>*                 _child[2];
     std::vector< Vertex* >          _vertex;
     const GridView&                 _gridView;
+    const GridType&                 _grid;
     BoundingBox                     _bounding_box;
     LinaVector                      _normal;            //!> the normal of the plane that splits this node    
     unsigned                        _orientation;       //!> the dimension that is split by this node
     unsigned                        _level;             //!> the depth of the node in the tree
     bool                            _isLeaf;
-    
+    bool                            _isEmpty;
+        
 protected:
     Node() = delete;
 
@@ -114,10 +114,12 @@ protected:
         _parent(parent), 
         _child({NULL, NULL}), 
         _gridView(gv), 
+        _grid(_gridView.grid()), 
         _orientation(0), 
         _normal(0.), 
         _level(0), 
-        _isLeaf(false) 
+        _isLeaf(false), 
+        _isEmpty(true)
     {
         _normal(_orientation) = 1.;
     }
@@ -131,9 +133,10 @@ protected:
     template< class Iterator >
     void put( Iterator it_begin, Iterator it_end ) {
         _vertex.clear();
-
+        _vertex.reserve( it_end - it_begin );
         for ( auto p = it_begin; p!= it_end; ++p) 
             _vertex.push_back(*p);
+        _vertex.shrink_to_fit();
 
         // abort the recursion if there is only one vertex left within this node
         if ( _vertex.size() <= 1 ) {
@@ -151,17 +154,9 @@ protected:
             else
                 r.push_back( vec );
         }
-
-        if ( l.size() > 0 ) 
-            _child[0]->put( l.begin(), l.end() );
-        else 
-            _child[0]->_isLeaf = true;
-            
-        if ( r.size() > 0 ) 
-            _child[1]->put( r.begin(), r.end() );
-        else 
-            _child[1]->_isLeaf = true;
-
+        
+        _child[0]->put( l.begin(), l.end() );
+        _child[1]->put( r.begin(), r.end() );
     }
 
     void split() {
@@ -181,11 +176,14 @@ public:
     Node( const Node<GridView>* parent, const BoundingBox& box, const unsigned level) :
         _parent(parent),
         _gridView(parent->_gridView), 
+        _grid(_gridView.grid()), 
         _level(level),
         _bounding_box(box),
         _normal(0.),
         _orientation(level%dim),
-        _child( {NULL, NULL} )
+        _child( {NULL, NULL} ), 
+        _isLeaf(false), 
+        _isEmpty(true)
     {
         _normal( _orientation ) = 1.;
 //         std::cout << "level         "   << _level << std::endl;
@@ -201,15 +199,17 @@ public:
         safe_delete( _child[1] );
     }
 
-    const Node*         child(const unsigned i) const { assert( i < 2 ); return _child[i];   }
-    const bool          isLeaf()                const { return _isLeaf;     }
-    const unsigned      level()                 const { return _level;      }
-    const unsigned      orientation()           const { return _orientation;}
-    const LinaVector    normal()                const { return _normal;     }
+    const Node*         child(const unsigned i)     const { assert( i < 2 ); return _child[i];   }
+    const Vertex*       vertex(const unsigned i)    const { assert( i < _vertex.size() ); return _vertex[i];   }
+    const bool          isLeaf()                    const { return _isLeaf;     }
+    const bool          isEmpty()                   const { return _isEmpty;    }
+    const unsigned      level()                     const { return _level;      }
+    const unsigned      orientation()               const { return _orientation;}
+    const LinaVector    normal()                    const { return _normal;     }
 
 
     // iterate over all entities of the node
-    std::vector<const Entity&> entities() const {}
+//     std::vector<const Entity&> entities() const {}
 
 
 public:
@@ -221,6 +221,10 @@ public:
         unsigned minLevel;
         Real     aveLevel;
         unsigned maxLevel;
+        
+        unsigned minLeafLevel;
+        Real     aveLeafLevel;
+        unsigned maxLeafLevel;
         
         unsigned minVertices;
         Real     aveVertices;
@@ -236,7 +240,10 @@ public:
             numVertices( 0 ), 
             minLevel( std::numeric_limits<unsigned>::max() ), 
             maxLevel( std::numeric_limits<unsigned>::min() ), 
-            aveLevel( 0. ), 
+            aveLevel( 0. ),
+            minLeafLevel( std::numeric_limits<unsigned>::max() ), 
+            maxLeafLevel( std::numeric_limits<unsigned>::min() ), 
+            aveLeafLevel( 0. ), 
             minVertices( std::numeric_limits<unsigned>::max() ), 
             maxVertices( std::numeric_limits<unsigned>::min() ), 
             aveVertices( 0. ), 
@@ -253,6 +260,10 @@ public:
             out << "Minimum Level                       " << minLevel           << std::endl;
             out << "Average Level                       " << aveLevel           << std::endl;
             out << "Maximum Level                       " << maxLevel           << std::endl << std::endl;
+            
+            out << "Minimum Leaf Level                  " << minLeafLevel       << std::endl;
+            out << "Average Leaf Level                  " << aveLeafLevel       << std::endl;
+            out << "Maximum Leaf Level                  " << maxLeafLevel       << std::endl << std::endl;
             
             out << "Minimum number of Vertices per Node " << minVertices        << std::endl;
             out << "Average number of Vertices per Node " << aveVertices        << std::endl;
@@ -282,6 +293,10 @@ protected:
         if ( _isLeaf ) {
             ts.numLeafs++;
             
+            ts.minLeafLevel = std::min( ts.minLeafLevel , _level );
+            ts.maxLeafLevel = std::max( ts.maxLeafLevel , _level );
+            ts.aveLeafLevel += static_cast<Real>(_level);
+            
             if ( vs > 0 ) {
                 assert( vs == 1 );
                 const unsigned    vss  = _vertex[0]->_entity_seed.size();
@@ -297,7 +312,23 @@ protected:
         }
     }
     
-
+    const Node* findNode( const LinaVector& x ) const {
+        if ( _isLeaf ) {
+            if ( _bounding_box.isInside(x) ) {
+                return this;
+            } else {
+                return NULL;
+            }
+        }
+            
+        if ( left(x) ) {
+            return _child[0]->findNode(x);
+        } else {
+            return _child[1]->findNode(x);
+        }
+        
+        return NULL;                                         // control flow can't get here!
+    }
 };
 
 

@@ -46,4 +46,12 @@ inline const math::ShortVector<BT, dim> asShortVector( const Dune::FieldVector<B
     return res;       
 }
 
+template< typename BT, unsigned dim >
+inline const Dune::FieldVector<BT, dim> asFieldVector( const math::ShortVector<BT, dim>& sv ) {
+    Dune::FieldVector<BT, dim> res;
+    for ( unsigned k = 0; k < dim; k++ )
+        res[k] = sv(k);
+    return res;       
+}
+
 }

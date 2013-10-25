@@ -54,27 +54,27 @@ public:
 protected:
     using Node<GV>::_parent;
     using Node<GV>::_gridView;
+    using Node<GV>::_grid;
     using Node<GV>::_vertex;
     using Node<GV>::_bounding_box;
     using Node<GV>::split;
     using Node<GV>::put;
+    using Node<GV>::findNode;
 
     
     typedef typename Node<GV>::Vertex           Vertex;
     typedef typename Traits::Real               Real;
     typedef typename Traits::Entity             Entity;
     typedef typename Traits::EntitySeed         EntitySeed;
+    typedef typename Traits::EntityPointer      EntityPointer;
     typedef typename Traits::GridView           GridView;
+    typedef typename Traits::LinaVector         LinaVector;
     
     static constexpr unsigned dim     = Traits::dim;
     static constexpr unsigned dimw    = Traits::dimw;
     
 protected:
     std::vector<EntitySeed>     _entities;
-
-    // map each vertex id to its corresponding entity index. where entity index is the
-    // index of the entity seed for the container above.
-    std::map< unsigned, std::vector<unsigned> > _mapping;
 
 public:
     Root( const Root<GridView>& root ) {};
@@ -101,24 +101,21 @@ public:
                 typename Traits::LinaVector gl = fem::asShortVector<Real, dim>( geo.corner(k) ) ;
                 
                 Vertex* _v = NULL;
+                
                 for ( auto vl = _l_vertex.begin(); vl != _l_vertex.end(); ++vl ) {
                     if ( math::norm2((*vl)->_global - gl) < 10.*std::numeric_limits<Real>::epsilon() )
                         _v = *vl;
                 }                
+                
                 if ( _v == NULL ) { 
                     _v = new Vertex();
                     _l_vertex.push_back( _v ); // TODO: use mapping to avoid duplication!!!!
-                }
-                
+                    _bounding_box.append(gl);
+                }                
 
                 // store global coordinates of all vertices
                 _v->_global = gl;
-//                 _v._id  = v.id();
-//                 _v._idx = v.idx();
                 _v->_entity_seed.push_back( &(_entities.back()) );
-
-                _bounding_box.append(_v->_global);                
-                
             }
         }
 
@@ -130,14 +127,12 @@ public:
     }
 
      // iterate over all leafs of the node
-    LeafView<GridView> leafView() const
-    {
+    LeafView<GridView> leafView() const {
         return LeafView<GridView>( *this );
     }
 
      // iterate over all leafs of the node
-    LevelView<GridView> levelView(unsigned level) const
-    {
+    LevelView<GridView> levelView(unsigned level) const {
         return LevelView<GridView>( *this, level );
     }
 
@@ -147,8 +142,9 @@ public:
         
         ts.numVertices         = _vertex.size();
         ts.aveLevel           /= static_cast<Real>( ts.numNodes );
+        ts.aveLeafLevel       /= static_cast<Real>( ts.numLeafs );
         ts.aveVertices        /= static_cast<Real>( ts.numNodes );
-        ts.aveEntitiesPerLeaf /= static_cast<Real>( ts.numLeafs );    
+        ts.aveEntitiesPerLeaf /= static_cast<Real>( ts.numLeafs );
     }
     
     void printTreeStats( std::ostream& out ) const {
@@ -156,6 +152,31 @@ public:
         fillTreeStats(ts);
         ts.operator<<(out) << std::endl;
     }
+    
+    
+    const EntityPointer findEntity( const LinaVector& x ) const {
+        // find node containing all possible cells
+        const Node<GridView>* node = findNode( x );
+        
+#ifndef NDEBUG
+//         if ( !node         ) return EntityPointer();
+//         if ( !node->_empty ) return EntityPointer();
+#endif
+
+        // iterate cells and return containing cell
+        auto xg = fem::asFieldVector( x );
+        for ( auto es : node->vertex(0)->_entity_seed ) {
+            const EntityPointer ep( _grid.entityPointer( *es ) );
+            const Entity&   e   = *ep; 
+            const auto&     geo = e.geometry();   
+            const auto&     gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
+            const auto      xl  = geo.local( xg );
+            if ( gre.checkInside( xl ) )
+                return ep;            
+        }
+        
+        throw ;
+    }    
 };
 
 
