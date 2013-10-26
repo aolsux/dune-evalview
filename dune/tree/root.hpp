@@ -202,7 +202,7 @@ public:
 #endif
         // iterate cells and return containing cell
         
-        if ( node->isEmpty() /*node->vertex_size() > 0*/ ) {
+        if ( !node->isEmpty() /*node->vertex_size() > 0*/ ) {
         
             auto xg = fem::asFieldVector( x );
             for ( auto es = node->vertex(0)->_entity_seed.begin(); es != node->vertex(0)->_entity_seed.end(); ++es ) {

@@ -142,11 +142,11 @@ protected:
         for ( auto p = it_begin; p!= it_end; ++p) 
             _vertex.push_back(*p);
         _vertex.shrink_to_fit();
-
+        _isEmpty = _vertex.size() < 1;
+        
         // abort the recursion if there is only one vertex left within this node
         if ( _vertex.size() <= 1 ) {
             _isLeaf     = true;
-            _isEmpty    = _vertex.size() < 1;
             return;
         }
 
