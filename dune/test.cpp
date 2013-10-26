@@ -677,7 +677,7 @@ public:
         
         std::cout << CE_STATUS << "time elapsed " << t.toc() <<  CE_RESET << std::endl;
 
-        std::cout << CE_STATUS << "Effectivity of root " << root.effectivity() <<  CE_RESET << std::endl;
+//         std::cout << CE_STATUS << "Effectivity of root " << root.effectivity() <<  CE_RESET << std::endl;
         root.printTreeStats( std::cout );
         
         std::cout << CE_STATUS << "Write Trajectory to VTK" << CE_RESET << std::endl;

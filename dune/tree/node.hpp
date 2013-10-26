@@ -34,6 +34,7 @@
 
 #include <limits>
 #include <iostream>
+#include <unordered_map>
 #include <error/duneerror.hpp>
 #include <utils/utils.hpp>
 #include <geometry/boundingbox.hpp>
@@ -213,59 +214,6 @@ protected:
         _isLeaf   = false;
     }
 
-    struct DepthFirstResult {
-        const EntitySeed es;
-        const bool       found;
-        
-        DepthFirstResult() : es(), found(false) {}
-        DepthFirstResult( const EntitySeed& es_ ) : es(es_), found(true) {}
-    };
-    
-     const DepthFirstResult searchUp( const Entity& e, const FieldVector& xg ) const {
-        const auto&     geo = e.geometry();   
-        const auto&     gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
-        const auto      xl  = geo.local( xg );
-        
-        if (gre.checkInside(xl)) {
-            if ( e.isLeaf() )
-                return DepthFirstResult( e.seed() );
-            else
-                return searchDown( e, xg );
-        } else {
-            if ( e.hasFather() )
-                return searchUp( *e.father(), xg );
-//             else {                                             // top-level reached, searchDown in neighbours
-//                 for( auto is = e.ileafbegin(); is != e.ileafend(); ++is ) {
-//                     if ( is->neighbor() ) {
-//                         const auto  ps =  is->outside();
-//                         const auto& ss = *ps;
-//                         const auto res = searchUp( ss, xg );
-//                         if ( res.found ) return res;
-//                     }
-//                 }
-//             }
-        }
-        
-        return DepthFirstResult( );
-    }
-    
-    const DepthFirstResult searchDown( const Entity& e, const FieldVector& xg ) const {
-        const auto&     geo = e.geometry();   
-        const auto&     gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
-        const auto      xl  = geo.local( xg );
-        
-        if (gre.checkInside(xl)) {
-            if ( e.isLeaf() )
-                return DepthFirstResult( e.seed() );
-            else {
-                const int level = e.level()+1;
-                for ( auto c = e.hbegin(level); c != e.hend(level); ++c )
-                    return searchDown( *c, xg );
-            }
-        } 
-        
-        return DepthFirstResult( );
-    }    
     
 public:
 
@@ -381,7 +329,7 @@ public:
         }
     };
     
-protected:
+public:
     
     virtual void fillTreeStats( TreeStats& ts ) const {
         ts.minLevel = std::min( ts.minLevel , _level );
@@ -416,7 +364,7 @@ protected:
         }
     }
     
-    const Node* findNode( const LinaVector& x ) const {
+    const Node* searchDown( const LinaVector& x ) const {
         if ( _isLeaf ) {
             if ( _bounding_box.isInside(x) ) {
                 return this;
@@ -426,12 +374,73 @@ protected:
         }
             
         if ( left(x) ) {
-            return _child[0]->findNode(x);
+            return _child[0]->searchDown(x);
         } else {
-            return _child[1]->findNode(x);
+            return _child[1]->searchDown(x);
         }
         
         return NULL;                                         // control flow can't get here!
+    }
+    
+    
+    struct DepthFirstResult {
+        const EntitySeed es;
+        const bool       found;
+        
+        DepthFirstResult() : es(), found(false) {}
+        DepthFirstResult( const EntitySeed& es_ ) : es(es_), found(true) {}
+        DepthFirstResult( const DepthFirstResult& r ) : es(r.es), found(r.found) {}
+    };
+    
+    struct EntityContainer {
+        EntitySeed  _seed;
+        LinaVector  _global;
+        unsigned    _id;
+        
+        EntityContainer( const EntitySeed& seed ) : _seed(seed) {
+            
+        }
+    };
+    
+    const DepthFirstResult searchUp( const FieldVector& xg, const std::vector<EntityContainer*>& _entities, const Node* caller = NULL ) const {
+        const auto res = searchDown( xg, _entities, caller );
+        if ( res.found ) return res;
+        
+        if ( _parent != NULL )
+            return _parent->searchUp( xg, _entities, this );        
+        
+        return DepthFirstResult( );
+    } 
+    
+        
+    const DepthFirstResult searchDown( const FieldVector& xg, const std::vector<EntityContainer*>& _entities, const Node* caller = NULL ) const {
+        if ( _isEmpty ) return DepthFirstResult( );
+           
+        if ( _isLeaf  ) {
+           
+            for ( auto es = vertex(0)->_entity_seeds.begin(); es != vertex(0)->_entity_seeds.end(); ++es ) {
+                const EntityPointer ep( _grid.entityPointer( _entities[*es]->_seed ) );
+                const Entity&   e   = *ep; 
+                const auto&     geo = e.geometry();   
+                const auto&     gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
+                const auto      xl  = geo.local( xg );
+                if ( gre.checkInside( xl ) ) {
+                    return DepthFirstResult( e.seed() );
+                }
+            }
+           
+        } else {
+            if ( caller != _child[0] ) {
+                const auto res0 = _child[0]->searchDown( xg, _entities, this );
+                if ( res0.found ) return res0;
+            }
+            if ( caller != _child[1] ) {
+                const auto res1 = _child[1]->searchDown( xg, _entities, this );
+                if ( res1.found ) return res1;
+            }
+        }        
+        
+        return DepthFirstResult( );
     }
 };
 

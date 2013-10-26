@@ -60,11 +60,11 @@ protected:
     using Node<GV>::_bounding_box;
     using Node<GV>::split;
     using Node<GV>::put;
-    using Node<GV>::findNode;
-    using Node<GV>::searchUp;
     using Node<GV>::searchDown;
-
+    using Node<GV>::searchUp;
     
+    
+    typedef typename Node<GV>::EntityContainer  EntityContainer;
     typedef typename Node<GV>::VertexContainer  VertexContainer;
     typedef typename Node<GV>::DepthFirstResult DepthFirstResult;
     typedef typename Traits::Real               Real;
@@ -82,24 +82,14 @@ protected:
     static constexpr unsigned dimw    = Traits::dimw;
     
 public: 
-    struct EntityContainer {
-        EntitySeed  _seed;
-        LinaVector  _global;
-        unsigned    _id;
-        
-        EntityContainer( const EntitySeed& seed ) : _seed(seed) {
-            
-        }
-    };
-
     std::map< unsigned, unsigned > id2idxEntity;
     std::map< unsigned, unsigned > id2idxVertex;
         
     std::vector<EntityContainer*>                                       _entities;
     Dune::HierarchicSearch< GridType, typename GridType::LeafIndexSet > _hr_locator;
 
-    unsigned _good;
-    unsigned _bad;
+//     unsigned _good;
+//     unsigned _bad;
     
 public:
     Root( const Root<GridView>& root ) {};
@@ -110,9 +100,9 @@ public:
 
     Root( const GridView& gridview ) :
         Node<GV>(NULL,gridview), 
-        _hr_locator( gridview.grid(), gridview.grid().leafIndexSet() ), 
-        _good(0), 
-        _bad(0)
+        _hr_locator( gridview.grid(), gridview.grid().leafIndexSet() )
+//         _good(0), 
+//         _bad(0)
     {
         build();
     }
@@ -136,12 +126,14 @@ public:
         // collect cells on leaf view
         for( auto e = _gridView.template begin<0>(); e != _gridView.template end<0>(); ++e ) {
             _entities.push_back( new EntityContainer(e->seed()) );
+            _entities.back()->_id = idSet.id(*e);
             id2idxEntity[idSet.id(*e)] = _entities.size()-1;
         }
         
         // collect vertices on leaf view
         for( auto e = _gridView.template begin<dim>(); e != _gridView.template end<dim>(); ++e ) {
             _l_vertices.push_back( new VertexContainer(e->seed()) );
+            _l_vertices.back()->_id = idSet.id(*e);
             id2idxVertex[idSet.id(*e)] = _l_vertices.size()-1;
         }
         
@@ -180,7 +172,6 @@ public:
                 
                 // store global coordinates of all vertices
                 _bounding_box.append(gl);
-                _v->_id     = idSet.id(c);
                 _v->_global = gl;
                 _v->_entity_seeds.push_back( idx );
                 _v->_neighbour_seeds.insert( _v->_neighbour_seeds.end(), neighbours.begin(), neighbours.end() );
@@ -240,75 +231,35 @@ public:
     
     const EntityData findEntity( const LinaVector& x )  {
         // find node containing all possible cells
-        const Node<GridView>* node = findNode( x );
-         
-#ifndef NDEBUG
-//         if ( !node         ) return EntityPointer();
-//         if ( !node->_empty ) return EntityPointer();
-#endif
-        // iterate cells and return containing cell
+        const Node<GridView>* node = searchDown( x );
+        const auto fx  = fem::asFieldVector(x);
+        const auto res = node->searchUp( fx, _entities, node );
         
-        if ( !node->isEmpty() /*node->vertex_size() > 0*/ ) {
-        
-            const auto xg = fem::asFieldVector( x );
-            for ( auto es = node->vertex(0)->_entity_seeds.begin(); es != node->vertex(0)->_entity_seeds.end(); ++es ) {
-                const EntityPointer ep( _grid.entityPointer( _entities[*es]->_seed ) );
-                const Entity&   e   = *ep; 
-                const auto&     geo = e.geometry();   
-                const auto&     gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
-                const auto      xl  = geo.local( xg );
-                if ( gre.checkInside( xl ) ) {
-                    this->_good++;
-                    return EntityData( ep, e, xl );
-                }
-            }
-            
-            for ( auto es = node->vertex(0)->_neighbour_seeds.begin(); es != node->vertex(0)->_neighbour_seeds.end(); ++es ) {
-                const EntityPointer ep( _grid.entityPointer( _entities[*es]->_seed ) );
-                const Entity&   e     = *ep; 
-                const DepthFirstResult r = searchUp( e, xg );
-                
-                if ( !r.found ) continue;
-                this->_good++;
-                const auto      rep = _grid.entityPointer( r.es );
-                const auto&     geo = rep->geometry();   
-                const auto&     gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
-                const auto      xl  = geo.local( xg );
-                return  EntityData( rep, *rep, xl );
-            }
-        } else {
-            const auto xg = fem::asFieldVector( x );
-            
-            for ( auto es = node->_parent->vertex(0)->_neighbour_seeds.begin(); es != node->_parent->vertex(0)->_neighbour_seeds.end(); ++es ) {
-                const EntityPointer ep( _grid.entityPointer( _entities[*es]->_seed ) );
-                const Entity&   e     = *ep; 
-                const DepthFirstResult r = searchUp( e, xg );
-                
-                if ( !r.found ) continue;
-                this->_good++;
-                const auto      rep = _grid.entityPointer( r.es );
-                const auto&     geo = rep->geometry();   
-                const auto&     gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
-                const auto      xl  = geo.local( xg );
-                return  EntityData( rep, *rep, xl );
-            }
+        if ( res.found ) {
+//             this->_good++;
+            const auto      ep  = _grid.entityPointer( res.es );
+            const Entity&   e   = *ep; 
+            const auto&     geo = e.geometry();   
+            const auto&     gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
+            const auto      xl  = geo.local( fem::asFieldVector(x));
+            return EntityData( ep, e, xl );
         }
         
-        this->_bad++;
-        const EntityPointer ep( _hr_locator.findEntity( fem::asFieldVector(x) ) );
-        const Entity&   e   = *ep; 
-        const auto&     geo = e.geometry();   
-        const auto&     gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
-        const auto      xl  = geo.local( fem::asFieldVector(x));
-        return EntityData( ep, e, xl );
-        // eff              5.8375e-01
-        // kd-tree          4.6170e+01 -> 1.917366 --> 56x speed-up
-        // hr-loc           1.0823e+02
+//         this->_bad++;
+//         const EntityPointer ep( _hr_locator.findEntity( fem::asFieldVector(x) ) );
+//         const Entity&   e   = *ep; 
+//         const auto&     geo = e.geometry();   
+//         const auto&     gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
+//         const auto      xl  = geo.local( fem::asFieldVector(x));
+//         return EntityData( ep, e, xl );
+        // eff              100%
+        // kd-tree          9.8000e-01 111.8x speed-up
+        // hr-loc           1.0960e+02
         // pnt-loc          1.0906e+02
 //         throw GridError( "Global coordinates are outside the grid!", __ERROR_INFO__ );
     }    
     
-    const Real effectivity() { return (Real)_good/(Real)(_good+_bad); }
+//     const Real effectivity() { return (Real)_good/(Real)(_good+_bad); }
 };
 
 
