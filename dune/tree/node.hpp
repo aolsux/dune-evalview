@@ -58,9 +58,11 @@ public:
         typedef math::ShortVector< Real, dim >      LinaVector;
         typedef Dune::FieldVector< Real, dim >      FieldVector;
         typedef geometry::BoundingBox< Real, dim >  BoundingBox;        
-        typedef typename GridType::template Codim<0>::EntitySeed        EntitySeed;
-        typedef typename GridType::template Codim<0>::EntityPointer     EntityPointer;
-        typedef typename GridType::template Codim<0>::Entity            Entity;
+        typedef typename GridType::template Codim<dim>::EntitySeed          VertexSeed;
+        typedef typename GridType::template Codim<dim>::EntityPointer       VertexPointer;
+        typedef typename GridType::template Codim<0>::EntitySeed            EntitySeed;
+        typedef typename GridType::template Codim<0>::EntityPointer         EntityPointer;
+        typedef typename GridType::template Codim<0>::Entity                Entity;
         
     };
 
@@ -68,6 +70,8 @@ protected:
     typedef typename Traits::Real           Real;
     typedef typename Traits::LinaVector     LinaVector;
     typedef typename Traits::BoundingBox    BoundingBox;
+    typedef typename Traits::VertexSeed     VertexSeed;
+    typedef typename Traits::VertexPointer  VertexPointer;
     typedef typename Traits::EntitySeed     EntitySeed;
     typedef typename Traits::EntityPointer  EntityPointer;
     typedef typename Traits::Entity         Entity;
@@ -79,18 +83,24 @@ protected:
     static constexpr unsigned dimw    = Traits::dimw;
     
 
-    struct Vertex
+    struct VertexContainer
     {
         std::vector<unsigned>   _entity_seed;
         std::vector<unsigned>   _neighbour_seed;
         LinaVector              _global;
+        VertexSeed              _seed;
+        unsigned                _id;
         
-        Vertex() :
+        VertexContainer() :
             _global( 0. )
         {}
-            
+          
+        VertexContainer( const VertexSeed& seed ) :
+            _global (0.), 
+            _seed   ( seed )
+        {}
         
-        Vertex( const Vertex& v ) :
+        VertexContainer( const VertexContainer& v ) :
             _entity_seed    (v._entity_seed     ), 
             _neighbour_seed (v._neighbour_seed  ), 
             _global         (v._global          )
@@ -101,7 +111,7 @@ protected:
 protected:
     const Node<GridView>*           _parent;
     Node<GridView>*                 _child[2];
-    std::vector< Vertex* >          _vertex;
+    std::vector< VertexContainer* > _vertex;
     const GridView&                 _gridView;
     const GridType&                 _grid;
     BoundingBox                     _bounding_box;
@@ -152,9 +162,8 @@ protected:
 
         split();
 
-        std::vector< Vertex* > l,r;
-        for ( auto vec : _vertex )
-        {
+        std::vector< VertexContainer* > l,r;
+        for ( auto vec : _vertex ) {
             if( left(vec->_global) )
                 l.push_back( vec );
             else
@@ -209,14 +218,14 @@ public:
         safe_delete( _child[1] );
     }
 
-    const Node*         child(const unsigned i)     const { assert( i < 2 ); return _child[i];   }
-    const Vertex*       vertex(const unsigned i)    const { if ( i >= _vertex.size() ) throw GridError( "Array index out of bounds i=" + asString(i) + "!", __ERROR_INFO__ ); return _vertex[i];   }
-    const unsigned      vertex_size() const { return _vertex.size(); }
-    const bool          isLeaf()                    const { return _isLeaf;     }
-    const bool          isEmpty()                   const { return _isEmpty;    }
-    const unsigned      level()                     const { return _level;      }
-    const unsigned      orientation()               const { return _orientation;}
-    const LinaVector    normal()                    const { return _normal;     }
+    const Node*             child(const unsigned i)     const { assert( i < 2 ); return _child[i];   }
+    const VertexContainer*  vertex(const unsigned i)    const { if ( i >= _vertex.size() ) throw GridError( "Array index out of bounds i=" + asString(i) + "!", __ERROR_INFO__ ); return _vertex[i];   }
+    const unsigned          vertex_size() const { return _vertex.size(); }
+    const bool              isLeaf()                    const { return _isLeaf;     }
+    const bool              isEmpty()                   const { return _isEmpty;    }
+    const unsigned          level()                     const { return _level;      }
+    const unsigned          orientation()               const { return _orientation;}
+    const LinaVector        normal()                    const { return _normal;     }
 
 
     // iterate over all entities of the node

@@ -34,7 +34,7 @@
 
 #include <limits>
 #include <vector>
-#include <map>
+#include <unordered_map>
 
 #include <fem/helper.hpp>
 #include <tree/node.hpp>
@@ -63,11 +63,13 @@ protected:
     using Node<GV>::findNode;
 
     
-    typedef typename Node<GV>::Vertex           Vertex;
+    typedef typename Node<GV>::VertexContainer  VertexContainer;
     typedef typename Traits::Real               Real;
     typedef typename Traits::Entity             Entity;
     typedef typename Traits::EntitySeed         EntitySeed;
     typedef typename Traits::EntityPointer      EntityPointer;
+    typedef typename Traits::VertexSeed         VertexSeed;
+    typedef typename Traits::VertexPointer      VertexPointer;
     typedef typename Traits::GridView           GridView;
     typedef typename Traits::GridType           GridType;
     typedef typename Traits::LinaVector         LinaVector;
@@ -77,7 +79,20 @@ protected:
     static constexpr unsigned dimw    = Traits::dimw;
     
 public: 
-    std::vector<EntitySeed>                                             _entities;
+    struct EntityContainer {
+        EntitySeed  _seed;
+        LinaVector  _global;
+        unsigned    _id;
+        
+        EntityContainer( const EntitySeed& seed ) : _seed(seed) {
+            
+        }
+    };
+
+    std::unordered_map< unsigned, unsigned > id2idxEntity;
+    std::unordered_map< unsigned, unsigned > id2idxVertex;
+        
+    std::vector<EntityContainer*>                                       _entities;
     Dune::HierarchicSearch< GridType, typename GridType::LeafIndexSet > _hr_locator;
 
     unsigned _good;
@@ -102,49 +117,52 @@ public:
     
     virtual void release() {
         Node<GV>::release();
+        for ( auto e : _entities )
+            safe_delete( e );
         for ( auto v : _vertex )
             safe_delete( v );
+        _entities.clear();
         _vertex.clear();
     }
     
     void build() {
-        std::vector< Vertex* > _l_vertex;
+        std::vector< VertexContainer* > _l_vertex;
+        
+        const auto& idSet = _grid.globalIdSet();
+        
+        for( auto e = _gridView.template begin<0>(); e != _gridView.template end<0>(); ++e ) {
+            _entities.push_back( new EntityContainer(e->seed()) );
+            id2idxEntity[idSet.id(*e)] = _entities.size()-1;
+        }
+        
+        for( auto e = _gridView.template begin<dim>(); e != _gridView.template end<dim>(); ++e ) {
+            _l_vertex.push_back( new VertexContainer(e->seed()) );
+            id2idxVertex[idSet.id(*e)] = _l_vertex.size()-1;
+        }
+        
         // create container of all entity seeds
         for( auto e = _gridView.template begin<0>(); e != _gridView.template end<0>(); ++e ) {
-            _entities.push_back( e->seed() );
-            const unsigned idx = _entities.size()-1;
+            const unsigned idx = id2idxEntity[ idSet.id(*e) ];
             const auto&    geo = e->geometry();   
             const auto&    gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
             
             const unsigned v_size = (unsigned)gre.size(dim);
 
             for ( unsigned k = 0; k < v_size; k++ ) {
-//                 const auto& pc = e->template subEntity<dim>(k);
-//                 const auto& c  = *pc;
+                const auto& pc = e->template subEntity<dim>(k);
+                const auto& c  = *pc;
                 typename Traits::LinaVector gl = fem::asShortVector<Real, dim>( geo.global( gre.position(k,dim) ) ) ;
                 
-                Vertex* _v = NULL;
+                VertexContainer* _v = _l_vertex[ id2idxVertex[ idSet.id(c) ] ];
                 
-                for ( auto vl = _l_vertex.begin(); vl != _l_vertex.end(); ++vl ) {
-                    if ( math::norm2((*vl)->_global - gl) < 10.*std::numeric_limits<Real>::epsilon() )
-                        _v = *vl;
-                }                
-                
-                if ( _v == NULL ) { 
-                    _v = new Vertex();
-                    _l_vertex.push_back( _v ); // TODO: use mapping to avoid duplication!!!!
-                    _bounding_box.append(gl);
-                }                
-
                 // store global coordinates of all vertices
+                _bounding_box.append(gl);
+                _v->_id     = idSet.id(c);
                 _v->_global = gl;
                 _v->_entity_seed.push_back( idx );
             }
         }
 
-//         std::cout << "Bounding box\n" ; _bounding_box.operator<<(std::cout) << std::endl;
-//         std::cout << "Number of vertices " << _l_vertex.size() << std::endl;
-        
         // generate list of vertices
         this->put( _l_vertex.begin(), _l_vertex.end() );
     }
@@ -206,7 +224,7 @@ public:
         
             auto xg = fem::asFieldVector( x );
             for ( auto es = node->vertex(0)->_entity_seed.begin(); es != node->vertex(0)->_entity_seed.end(); ++es ) {
-                const EntityPointer ep( _grid.entityPointer( _entities[*es] ) );
+                const EntityPointer ep( _grid.entityPointer( _entities[*es]->_seed ) );
                 const Entity&   e   = *ep; 
                 const auto&     geo = e.geometry();   
                 const auto&     gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
