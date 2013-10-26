@@ -656,7 +656,7 @@ public:
 
             typename FemLocalEvalOperator<SetupTraits>::Result du0;
             typename FemLocalEvalOperator<SetupTraits>::Result du1;
-            for ( Real t = 0.; t < 50. + .1*dt; t+=dt ) {
+            for ( Real t = 0.; t < 500. + .1*dt; t+=dt ) {
                 du0 = rhs( xo, fieldH );
 
                 vo = (1.-fr*dt)*vn - .1*dt*du0.du;

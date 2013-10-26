@@ -88,21 +88,18 @@ protected:
     struct VertexContainer
     {
         std::vector<unsigned>   _entity_seeds;
-        std::vector<unsigned>   _neighbour_seeds;
         LinaVector              _global;
         VertexSeed              _seed;
         unsigned                _id;
         
         VertexContainer() :
             _entity_seeds    (  ), 
-            _neighbour_seeds (  ), 
             _global          (0.), 
             _id              (0 )
         {}
           
         VertexContainer( const VertexSeed& seed ) :
             _entity_seeds    (    ), 
-            _neighbour_seeds (    ), 
             _global          (0.  ), 
             _seed            (seed), 
             _id              (0   )
@@ -110,7 +107,6 @@ protected:
         
         VertexContainer( const VertexContainer& v ) :
             _entity_seeds    (v._entity_seeds     ), 
-            _neighbour_seeds (v._neighbour_seeds  ), 
             _global          (v._global           ), 
             _seed            (v._seed             ), 
             _id              (v._id               )
@@ -121,21 +117,6 @@ protected:
             std::sort( _entity_seeds.begin(), _entity_seeds.end()); 
             auto lastE = std::unique(_entity_seeds.begin(), _entity_seeds.end());
             _entity_seeds.erase(lastE, _entity_seeds.end());
-            
-            // remove duplicate neighbours
-            std::sort( _neighbour_seeds.begin(), _neighbour_seeds.end()); 
-            auto lastN = std::unique(_neighbour_seeds.begin(), _neighbour_seeds.end());
-            _neighbour_seeds.erase(lastN, _neighbour_seeds.end());
-            
-            // remove entities from neighbours
-            for ( auto e = _entity_seeds.begin(); e != _entity_seeds.end(); ++e ) {
-                for ( auto n = _neighbour_seeds.begin(); n != _neighbour_seeds.end(); ++n ) {
-                    if ( *n == *e ) {
-                        _neighbour_seeds.erase(n);
-                        n--;
-                    }
-                }
-            }
         }        
     };
 
@@ -366,11 +347,11 @@ public:
     
     const Node* searchDown( const LinaVector& x ) const {
         if ( _isLeaf ) {
-            if ( _bounding_box.isInside(x) ) {
+//             if ( _bounding_box.isInside(x) ) {
                 return this;
-            } else {
-                return NULL;
-            }
+//             } else {
+//                 return NULL;
+//             }
         }
             
         if ( left(x) ) {

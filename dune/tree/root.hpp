@@ -145,24 +145,6 @@ public:
             
             const unsigned v_size = (unsigned)gre.size(dim);
             
-            std::vector< unsigned > neighbours;
-                
-            for( auto is = e->ileafbegin(); is != e->ileafend(); ++is ) {
-                if ( is->neighbor() ) {
-                    const auto  ps =  is->outside();
-                    const auto& ss = *ps;
-                    neighbours.push_back( id2idxEntity[idSet.id(ss)] );                    
-                }
-            }
-            
-            for( auto is = e->ilevelbegin(); is != e->ilevelend(); ++is ) {
-                if ( is->neighbor() ) {
-                    const auto  ps =  is->outside();
-                    const auto& ss = *ps;
-                    neighbours.push_back( id2idxEntity[idSet.id(ss)] );                    
-                }
-            }
-            
             for ( unsigned k = 0; k < v_size; k++ ) {
                 const auto& pc = e->template subEntity<dim>(k);
                 const auto& c  = *pc;
@@ -174,13 +156,12 @@ public:
                 _bounding_box.append(gl);
                 _v->_global = gl;
                 _v->_entity_seeds.push_back( idx );
-                _v->_neighbour_seeds.insert( _v->_neighbour_seeds.end(), neighbours.begin(), neighbours.end() );
             }
         }
 
-        for ( auto v : _vertices ) {
-            v->remove_duplicates();
-        }
+//         for ( auto v : _vertices ) {
+//             v->remove_duplicates();
+//         }
         
         // generate list of vertices
         this->put( _l_vertices.begin(), _l_vertices.end() );
