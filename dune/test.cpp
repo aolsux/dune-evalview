@@ -569,7 +569,7 @@ public:
             Dune::PDELab::interpolate( g, gfs, *f );
     }
 
-    void compute( unsigned maxLevel = 3 ) {
+    void compute( unsigned maxLevel = 2 ) {
         Projector               proj;
         ErrorEstimation         ree(gfs, fieldH, funcLop );
         EstimationAdaptation    ea(grid,gfs,ree,0.5,0.0,1,maxLevel);
@@ -591,7 +591,7 @@ public:
                 localCoarsen( gra, fieldL, {&fieldL, &fieldH} );
         }
 
-//         integrate( view, fieldH );
+        integrate( view, fieldH );
         
 
         
@@ -611,17 +611,25 @@ public:
     }
 
     typename FemLocalEvalOperator< SetupTraits >::Result rhs ( math::ShortVector<typename SetupTraits::Coord, SetupTraits::dimw>& x, const FieldU field ) {
-        Dune::FieldVector<typename SetupTraits::Coord, SetupTraits::dimw> fv;
-        for ( unsigned k = 0; k < SetupTraits::dimw; k++ )
-            fv[k] = x(k);
-        return rhs( fv, field );
+//         Dune::FieldVector<typename SetupTraits::Coord, SetupTraits::dimw> fv;
+//         for ( unsigned k = 0; k < Traits::dim; k++ )
+//             fv[k] = x(k);
+//         return rhs( fv, field );
+        
+        auto e = root.findEntity( x );
+        const auto res = pl.lop.eval( e.pointer, e.xl, field );
+        return res;
     }
 
     typename FemLocalEvalOperator< SetupTraits >::Result rhs ( Dune::FieldVector<typename SetupTraits::Coord, SetupTraits::dimw>& x, const FieldU field ) {
-        const auto res = pl.eval( x, field );
-        if ( !res.found )
-            throw ;
-        return res.res;
+//         const auto res = pl.eval( x, field );
+//         if ( !res.found )
+//             throw ;
+//          return res.res;
+
+         auto e = root.findEntity( asShortVector( x) );
+         const auto res = pl.lop.eval( e.pointer, e.xl, field );
+         return res;
     }
 
     void integrate ( typename SetupTraits::GridView& gv, const typename SetupTraits::FieldU& v ) {
@@ -640,6 +648,10 @@ public:
         vo(0) = .0;
         vn(0) = .0;
 
+        
+        Timer t;
+        t.tic();        
+        
         try {
 
             typename FemLocalEvalOperator<SetupTraits>::Result du0;
@@ -659,10 +671,16 @@ public:
                 std::cout << "\t t = " << t << "\tx = ( " << xn << " )\n";
             }
 
-        } catch (...) {
-
+        } catch ( GridError& err ) {
+            std::cout << CE_ERROR << err.what() << CE_RESET << std::endl;
         }
+        
+        std::cout << CE_STATUS << "time elapsed " << t.toc() <<  CE_RESET << std::endl;
 
+        std::cout << CE_STATUS << "Effectivity of root " << root.effectivity() <<  CE_RESET << std::endl;
+        root.printTreeStats( std::cout );
+        
+        std::cout << CE_STATUS << "Write Trajectory to VTK" << CE_RESET << std::endl;
         traj.writeVTK( "traj.vtp" );
     }
 
@@ -706,7 +724,7 @@ int main ( int argc, char **argv ) {
 #ifdef USE_CMD_PARAM
         if ( (argc < 1) || (std::string(argv[1]) == "-p1d2") ) {
 #endif
-            typedef ALUSimplexP1Traits< double, 2, FemLocalOperator, FemFunctionOperator>   SetupTraits;
+            typedef ALUSimplexP1Traits< double, 3, FemLocalOperator, FemFunctionOperator>   SetupTraits;
             compute< SetupTraits >();
 #ifdef USE_CMD_PARAM
         } else if (std::string(argv[1]) == "-p1d3") {

@@ -57,6 +57,7 @@
 #include <dune/grid/common/entitypointer.hh>
 #include <dune/grid/io/file/dgfparser/dgfwriter.hh>
 
+#include <dune/geometry/generalvertexorder.hh>
 #include <dune/geometry/referenceelements.hh>
 #include <dune/geometry/quadraturerules.hh>
 

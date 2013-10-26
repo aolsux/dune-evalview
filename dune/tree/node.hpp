@@ -34,6 +34,7 @@
 
 #include <limits>
 #include <iostream>
+#include <error/duneerror.hpp>
 #include <utils/utils.hpp>
 #include <geometry/boundingbox.hpp>
 #include <assert.h>
@@ -55,10 +56,12 @@ public:
                 
         typedef typename GridView::ctype            Real;
         typedef math::ShortVector< Real, dim >      LinaVector;
+        typedef Dune::FieldVector< Real, dim >      FieldVector;
         typedef geometry::BoundingBox< Real, dim >  BoundingBox;        
-        typedef typename GridType::template Codim<0>::EntitySeed    EntitySeed;
-        typedef typename GridType::template Codim<0>::EntityPointer EntityPointer;
-        typedef typename GridType::template Codim<0>::Entity        Entity;
+        typedef typename GridType::template Codim<0>::EntitySeed        EntitySeed;
+        typedef typename GridType::template Codim<0>::EntityPointer     EntityPointer;
+        typedef typename GridType::template Codim<0>::Entity            Entity;
+        
     };
 
 protected:
@@ -79,6 +82,7 @@ protected:
     struct Vertex
     {
         std::vector<unsigned>   _entity_seed;
+        std::vector<unsigned>   _neighbour_seed;
         LinaVector              _global;
         
         Vertex() :
@@ -87,8 +91,9 @@ protected:
             
         
         Vertex( const Vertex& v ) :
-            _entity_seed (v._entity_seed ), 
-            _global      (   v._global   )
+            _entity_seed    (v._entity_seed     ), 
+            _neighbour_seed (v._neighbour_seed  ), 
+            _global         (v._global          )
         {}
 
     };
@@ -140,7 +145,8 @@ protected:
 
         // abort the recursion if there is only one vertex left within this node
         if ( _vertex.size() <= 1 ) {
-            _isLeaf = true;
+            _isLeaf     = true;
+            _isEmpty    = _vertex.size() < 1;
             return;
         }
 
@@ -204,7 +210,8 @@ public:
     }
 
     const Node*         child(const unsigned i)     const { assert( i < 2 ); return _child[i];   }
-    const Vertex*       vertex(const unsigned i)    const { assert( i < _vertex.size() ); return _vertex[i];   }
+    const Vertex*       vertex(const unsigned i)    const { if ( i >= _vertex.size() ) throw GridError( "Array index out of bounds i=" + asString(i) + "!", __ERROR_INFO__ ); return _vertex[i];   }
+    const unsigned      vertex_size() const { return _vertex.size(); }
     const bool          isLeaf()                    const { return _isLeaf;     }
     const bool          isEmpty()                   const { return _isEmpty;    }
     const unsigned      level()                     const { return _level;      }

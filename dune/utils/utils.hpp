@@ -35,6 +35,7 @@
 #include <sstream>
 #include <string>
 #include <functional>
+#include <sys/time.h>
 
 // #include <error/baseerror.hpp>
 // #include <utils/tuple.hpp>
@@ -127,3 +128,32 @@ inline std::ostream& operator << ( std::ostream& os, const CnslEsc& val ){
     #define CE_LICENSE  ""
 #endif
 
+
+class Timer {
+protected:
+    double ticTime;
+    double tocTime;
+public:
+    Timer();
+
+    void        tic();
+    double      toc();
+    std::string tocStr();
+};
+
+Timer::Timer(){
+    tic();
+}
+
+void        Timer::tic(){
+//    timeval t;
+//    gettimeofday(&t,0);
+    ticTime = (double)clock()/(double)CLOCKS_PER_SEC; //(double)t.tv_usec/1000.0;
+}
+
+double      Timer::toc(){
+//    timeval t;
+//    gettimeofday(&t,0);
+    tocTime = (double)clock()/(double)CLOCKS_PER_SEC; //(double)t.tv_usec/1000.0;
+    return tocTime - ticTime;
+}

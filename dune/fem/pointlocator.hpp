@@ -60,7 +60,7 @@ public:
 
 private:
 
-protected:
+public:                                                      //protected:
     typename Traits::GridType&        grid;
     typename Traits::LocalOperator&   lop;
 

@@ -40,7 +40,7 @@ namespace tree {
 template< class GV > class Node;
 template< class GV > class Root;
     
-template< class GV > 
+template < class GV >
 class LevelView {
 public:
   std::vector<Node<GV>*> _nodes;

@@ -51,6 +51,7 @@
 // #include <error/dataerror.h>
 
 #include <fem/dune.h>
+#include <fem/helper.hpp>
 #include <fem/setuptraits.hpp>
 #include <tree/node.hpp>
 #include <tree/root.hpp>

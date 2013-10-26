@@ -36,9 +36,9 @@
 
 namespace tree {
 
-template< class GV > class Root;
+template <class GV> class Root;
 
-template< class GV >
+template <class GV>
 class LeafView {
 private:
     LeafView() = delete;

@@ -69,14 +69,20 @@ protected:
     typedef typename Traits::EntitySeed         EntitySeed;
     typedef typename Traits::EntityPointer      EntityPointer;
     typedef typename Traits::GridView           GridView;
+    typedef typename Traits::GridType           GridType;
     typedef typename Traits::LinaVector         LinaVector;
+    typedef typename Traits::FieldVector        FieldVector;
     
     static constexpr unsigned dim     = Traits::dim;
     static constexpr unsigned dimw    = Traits::dimw;
     
-protected:
-    std::vector<EntitySeed>     _entities;
+public: 
+    std::vector<EntitySeed>                                             _entities;
+    Dune::HierarchicSearch< GridType, typename GridType::LeafIndexSet > _hr_locator;
 
+    unsigned _good;
+    unsigned _bad;
+    
 public:
     Root( const Root<GridView>& root ) {};
     
@@ -85,7 +91,10 @@ public:
     };
 
     Root( const GridView& gridview ) :
-        Node<GV>(NULL,gridview)
+        Node<GV>(NULL,gridview), 
+        _hr_locator( gridview.grid(), gridview.grid().leafIndexSet() ), 
+        _good(0), 
+        _bad(0)
     {
         build();
     }
@@ -104,13 +113,15 @@ public:
         for( auto e = _gridView.template begin<0>(); e != _gridView.template end<0>(); ++e ) {
             _entities.push_back( e->seed() );
             const unsigned idx = _entities.size()-1;
-            auto geo = e->geometry();
+            const auto&    geo = e->geometry();   
+            const auto&    gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
             
-            auto& gidSet    = _gridView.grid().globalIdSet();
-            auto& gidxSet   = _gridView.grid().leafIndexSet();
-            
-            for ( unsigned k = 0; k < geo.corners(); k++ ) {
-                typename Traits::LinaVector gl = fem::asShortVector<Real, dim>( geo.corner(k) ) ;
+            const unsigned v_size = (unsigned)gre.size(dim);
+
+            for ( unsigned k = 0; k < v_size; k++ ) {
+//                 const auto& pc = e->template subEntity<dim>(k);
+//                 const auto& c  = *pc;
+                typename Traits::LinaVector gl = fem::asShortVector<Real, dim>( geo.global( gre.position(k,dim) ) ) ;
                 
                 Vertex* _v = NULL;
                 
@@ -131,8 +142,8 @@ public:
             }
         }
 
-        std::cout << "Bounding box\n" ; _bounding_box.operator<<(std::cout) << std::endl;
-        std::cout << "Number of vertices " << _l_vertex.size() << std::endl;
+//         std::cout << "Bounding box\n" ; _bounding_box.operator<<(std::cout) << std::endl;
+//         std::cout << "Number of vertices " << _l_vertex.size() << std::endl;
         
         // generate list of vertices
         this->put( _l_vertex.begin(), _l_vertex.end() );
@@ -171,7 +182,17 @@ public:
     }
     
     
-    const EntityPointer findEntity( const LinaVector& x ) const {
+    struct EntityData {
+        const EntityPointer                 pointer;
+        const Entity&                       entity;
+        const FieldVector                   xl;
+        
+        EntityData( const EntityPointer pointer_, 
+                    const Entity&       entity_, 
+                    const FieldVector   xl_  ) : pointer(pointer_),  entity(entity_), xl(xl_) {}
+    };
+    
+    const EntityData findEntity( const LinaVector& x )  {
         // find node containing all possible cells
         const Node<GridView>* node = findNode( x );
         
@@ -180,18 +201,38 @@ public:
 //         if ( !node->_empty ) return EntityPointer();
 #endif
         // iterate cells and return containing cell
-        auto xg = fem::asFieldVector( x );
-        for ( auto es = node->vertex(0)->_entity_seed.begin(); es != node->vertex(0)->_entity_seed.end(); ++es ) {
-            const EntityPointer ep( _grid.entityPointer( _entities[*es] ) );
-            const Entity&   e   = *ep; 
-            const auto&     geo = e.geometry();   
-            const auto&     gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
-            const auto      xl  = geo.local( xg );
-            if ( gre.checkInside( xl ) ) return ep;
-        }
         
-        throw GridError( "Global coordinates are outside the grid!", __ERROR_INFO__ );
+        if ( node->isEmpty() /*node->vertex_size() > 0*/ ) {
+        
+            auto xg = fem::asFieldVector( x );
+            for ( auto es = node->vertex(0)->_entity_seed.begin(); es != node->vertex(0)->_entity_seed.end(); ++es ) {
+                const EntityPointer ep( _grid.entityPointer( _entities[*es] ) );
+                const Entity&   e   = *ep; 
+                const auto&     geo = e.geometry();   
+                const auto&     gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
+                const auto      xl  = geo.local( xg );
+                if ( gre.checkInside( xl ) ) {
+                    this->_good++;
+                    return EntityData( ep, e, xl );
+                }
+            }
+        } 
+        
+        this->_bad++;
+        const EntityPointer ep( _hr_locator.findEntity( fem::asFieldVector(x) ) );
+        const Entity&   e   = *ep; 
+        const auto&     geo = e.geometry();   
+        const auto&     gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
+        const auto      xl  = geo.local( fem::asFieldVector(x));
+        return EntityData( ep, e, xl );
+        // eff              5.8375e-01
+        // kd-tree          4.6170e+01 -> 1.917366 --> 56x speed-up
+        // hr-loc           1.0823e+02
+        // pnt-loc          1.0906e+02
+//         throw GridError( "Global coordinates are outside the grid!", __ERROR_INFO__ );
     }    
+    
+    const Real effectivity() { return (Real)_good/(Real)(_good+_bad); }
 };
 
 
