@@ -87,9 +87,6 @@ public:
         
     std::vector<EntityContainer*>                                       _entities;
     Dune::HierarchicSearch< GridType, typename GridType::LeafIndexSet > _hr_locator;
-
-//     unsigned _good;
-//     unsigned _bad;
     
 public:
     Root( const Root<GridView>& root ) {};
@@ -101,8 +98,6 @@ public:
     Root( const GridView& gridview ) :
         Node<GV>(NULL,gridview), 
         _hr_locator( gridview.grid(), gridview.grid().leafIndexSet() )
-//         _good(0), 
-//         _bad(0)
     {
         build();
     }
@@ -159,10 +154,6 @@ public:
             }
         }
 
-//         for ( auto v : _vertices ) {
-//             v->remove_duplicates();
-//         }
-        
         // generate list of vertices
         this->put( _l_vertices.begin(), _l_vertices.end() );
     }
@@ -217,7 +208,6 @@ public:
         const auto res = node->searchUp( fx, _entities, node );
         
         if ( res.found ) {
-//             this->_good++;
             const auto      ep  = _grid.entityPointer( res.es );
             const Entity&   e   = *ep; 
             const auto&     geo = e.geometry();   
@@ -226,7 +216,6 @@ public:
             return EntityData( ep, e, xl );
         }
         
-//         this->_bad++;
 //         const EntityPointer ep( _hr_locator.findEntity( fem::asFieldVector(x) ) );
 //         const Entity&   e   = *ep; 
 //         const auto&     geo = e.geometry();   
@@ -237,10 +226,9 @@ public:
         // kd-tree          9.8000e-01 111.8x speed-up
         // hr-loc           1.0960e+02
         // pnt-loc          1.0906e+02
-//         throw GridError( "Global coordinates are outside the grid!", __ERROR_INFO__ );
+        
+        throw GridError( "Global coordinates are outside the grid!", __ERROR_INFO__ );
     }    
-    
-//     const Real effectivity() { return (Real)_good/(Real)(_good+_bad); }
 };
 
 

@@ -151,7 +151,7 @@ protected:
         _normal(_orientation) = 1.;
     }
 
-    bool left(const LinaVector& p)  const { return p(_orientation) < _bounding_box.center(_orientation); }
+    bool left (const LinaVector& p) const { return p(_orientation) < _bounding_box.center(_orientation); }
     bool right(const LinaVector& p) const { return !left( p ); }
 
     // vid contain indices of all vertices that reside in the space defined by boundingbox
@@ -213,13 +213,8 @@ public:
         _isLeaf(false), 
         _isEmpty(true)
     {
-        _normal( _orientation ) = 1.;
-//         std::cout << "level         "   << _level << std::endl;
-//         std::cout << "orientation   "   << _orientation << std::endl;
-//         std::cout << "boundingbox\n"; _bounding_box.operator<<(std::cout);
-//         std::cout << "normal        "   << _normal << std::endl;
-        
-        if ( level > 1000 ) throw;
+        _normal( _orientation ) = 1.;        
+        if ( level > 1000 ) throw GridError( "Tree depth > 1000!", __ERROR_INFO__ );
     }
 
     virtual ~Node() {
@@ -231,19 +226,14 @@ public:
         safe_delete( _child[1] );
     }
 
-    const Node*             child(const unsigned i)     const { assert( i < 2 ); return _child[i];   }
-    const VertexContainer*  vertex(const unsigned i)    const { if ( i >= _vertices.size() ) throw GridError( "Array index out of bounds i=" + asString(i) + "!", __ERROR_INFO__ ); return _vertices[i];   }
-    const unsigned          vertex_size() const { return _vertices.size(); }
+    const Node*             child (const unsigned i)    const { return _child[i]; }
+    const VertexContainer*  vertex(const unsigned i)    const { return _vertices[i]; }
+    const unsigned          vertex_size()               const { return _vertices.size(); }
     const bool              isLeaf()                    const { return _isLeaf;     }
     const bool              isEmpty()                   const { return _isEmpty;    }
     const unsigned          level()                     const { return _level;      }
     const unsigned          orientation()               const { return _orientation;}
     const LinaVector        normal()                    const { return _normal;     }
-
-
-    // iterate over all entities of the node
-//     std::vector<const Entity&> entities() const {}
-
 
 public:
     struct TreeStats {
@@ -346,21 +336,10 @@ public:
     }
     
     const Node* searchDown( const LinaVector& x ) const {
-        if ( _isLeaf ) {
-//             if ( _bounding_box.isInside(x) ) {
-                return this;
-//             } else {
-//                 return NULL;
-//             }
-        }
+        if ( _isLeaf ) return this;
             
-        if ( left(x) ) {
-            return _child[0]->searchDown(x);
-        } else {
-            return _child[1]->searchDown(x);
-        }
-        
-        return NULL;                                         // control flow can't get here!
+        if ( left(x) ) return _child[0]->searchDown(x);    
+        return _child[1]->searchDown(x);
     }
     
     
@@ -378,9 +357,7 @@ public:
         LinaVector  _global;
         unsigned    _id;
         
-        EntityContainer( const EntitySeed& seed ) : _seed(seed) {
-            
-        }
+        EntityContainer( const EntitySeed& seed ) : _seed(seed), _global(0.), _id(0) {}
     };
     
     const DepthFirstResult searchUp( const FieldVector& xg, const std::vector<EntityContainer*>& _entities, const Node* caller = NULL ) const {
