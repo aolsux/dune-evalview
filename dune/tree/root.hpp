@@ -61,9 +61,12 @@ protected:
     using Node<GV>::split;
     using Node<GV>::put;
     using Node<GV>::findNode;
+    using Node<GV>::searchUp;
+    using Node<GV>::searchDown;
 
     
     typedef typename Node<GV>::VertexContainer  VertexContainer;
+    typedef typename Node<GV>::DepthFirstResult DepthFirstResult;
     typedef typename Traits::Real               Real;
     typedef typename Traits::Entity             Entity;
     typedef typename Traits::EntitySeed         EntitySeed;
@@ -149,7 +152,25 @@ public:
             const auto&    gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
             
             const unsigned v_size = (unsigned)gre.size(dim);
-
+            
+            std::vector< unsigned > neighbours;
+                
+            for( auto is = e->ileafbegin(); is != e->ileafend(); ++is ) {
+                if ( is->neighbor() ) {
+                    const auto  ps =  is->outside();
+                    const auto& ss = *ps;
+                    neighbours.push_back( id2idxEntity[idSet.id(ss)] );                    
+                }
+            }
+            
+            for( auto is = e->ilevelbegin(); is != e->ilevelend(); ++is ) {
+                if ( is->neighbor() ) {
+                    const auto  ps =  is->outside();
+                    const auto& ss = *ps;
+                    neighbours.push_back( id2idxEntity[idSet.id(ss)] );                    
+                }
+            }
+            
             for ( unsigned k = 0; k < v_size; k++ ) {
                 const auto& pc = e->template subEntity<dim>(k);
                 const auto& c  = *pc;
@@ -161,10 +182,15 @@ public:
                 _bounding_box.append(gl);
                 _v->_id     = idSet.id(c);
                 _v->_global = gl;
-                _v->_entity_seed.push_back( idx );
+                _v->_entity_seeds.push_back( idx );
+                _v->_neighbour_seeds.insert( _v->_neighbour_seeds.end(), neighbours.begin(), neighbours.end() );
             }
         }
 
+        for ( auto v : _vertices ) {
+            v->remove_duplicates();
+        }
+        
         // generate list of vertices
         this->put( _l_vertices.begin(), _l_vertices.end() );
     }
@@ -215,7 +241,7 @@ public:
     const EntityData findEntity( const LinaVector& x )  {
         // find node containing all possible cells
         const Node<GridView>* node = findNode( x );
-        
+         
 #ifndef NDEBUG
 //         if ( !node         ) return EntityPointer();
 //         if ( !node->_empty ) return EntityPointer();
@@ -224,8 +250,8 @@ public:
         
         if ( !node->isEmpty() /*node->vertex_size() > 0*/ ) {
         
-            auto xg = fem::asFieldVector( x );
-            for ( auto es = node->vertex(0)->_entity_seed.begin(); es != node->vertex(0)->_entity_seed.end(); ++es ) {
+            const auto xg = fem::asFieldVector( x );
+            for ( auto es = node->vertex(0)->_entity_seeds.begin(); es != node->vertex(0)->_entity_seeds.end(); ++es ) {
                 const EntityPointer ep( _grid.entityPointer( _entities[*es]->_seed ) );
                 const Entity&   e   = *ep; 
                 const auto&     geo = e.geometry();   
@@ -236,7 +262,37 @@ public:
                     return EntityData( ep, e, xl );
                 }
             }
-        } 
+            
+            for ( auto es = node->vertex(0)->_neighbour_seeds.begin(); es != node->vertex(0)->_neighbour_seeds.end(); ++es ) {
+                const EntityPointer ep( _grid.entityPointer( _entities[*es]->_seed ) );
+                const Entity&   e     = *ep; 
+                const DepthFirstResult r = searchUp( e, xg );
+                
+                if ( !r.found ) continue;
+                this->_good++;
+                const auto      rep = _grid.entityPointer( r.es );
+                const auto&     geo = rep->geometry();   
+                const auto&     gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
+                const auto      xl  = geo.local( xg );
+                return  EntityData( rep, *rep, xl );
+            }
+        } else {
+            const auto xg = fem::asFieldVector( x );
+            
+            for ( auto es = node->_parent->vertex(0)->_neighbour_seeds.begin(); es != node->_parent->vertex(0)->_neighbour_seeds.end(); ++es ) {
+                const EntityPointer ep( _grid.entityPointer( _entities[*es]->_seed ) );
+                const Entity&   e     = *ep; 
+                const DepthFirstResult r = searchUp( e, xg );
+                
+                if ( !r.found ) continue;
+                this->_good++;
+                const auto      rep = _grid.entityPointer( r.es );
+                const auto&     geo = rep->geometry();   
+                const auto&     gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
+                const auto      xl  = geo.local( xg );
+                return  EntityData( rep, *rep, xl );
+            }
+        }
         
         this->_bad++;
         const EntityPointer ep( _hr_locator.findEntity( fem::asFieldVector(x) ) );

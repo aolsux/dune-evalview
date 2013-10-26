@@ -39,9 +39,9 @@
 #include <geometry/boundingbox.hpp>
 #include <assert.h>
 #include <boost/iterator/iterator_concepts.hpp>
+#include <fem/dune.h>
 
 namespace tree {
-
 
 
 template< class GV >
@@ -69,6 +69,7 @@ public:
 protected:
     typedef typename Traits::Real           Real;
     typedef typename Traits::LinaVector     LinaVector;
+    typedef typename Traits::FieldVector    FieldVector;
     typedef typename Traits::BoundingBox    BoundingBox;
     typedef typename Traits::VertexSeed     VertexSeed;
     typedef typename Traits::VertexPointer  VertexPointer;
@@ -85,30 +86,59 @@ protected:
 
     struct VertexContainer
     {
-        std::vector<unsigned>   _entity_seed;
-        std::vector<unsigned>   _neighbour_seed;
+        std::vector<unsigned>   _entity_seeds;
+        std::vector<unsigned>   _neighbour_seeds;
         LinaVector              _global;
         VertexSeed              _seed;
         unsigned                _id;
         
         VertexContainer() :
-            _global( 0. )
+            _entity_seeds    (  ), 
+            _neighbour_seeds (  ), 
+            _global          (0.), 
+            _id              (0 )
         {}
           
         VertexContainer( const VertexSeed& seed ) :
-            _global (0.), 
-            _seed   ( seed )
+            _entity_seeds    (    ), 
+            _neighbour_seeds (    ), 
+            _global          (0.  ), 
+            _seed            (seed), 
+            _id              (0   )
         {}
         
         VertexContainer( const VertexContainer& v ) :
-            _entity_seed    (v._entity_seed     ), 
-            _neighbour_seed (v._neighbour_seed  ), 
-            _global         (v._global          )
+            _entity_seeds    (v._entity_seeds     ), 
+            _neighbour_seeds (v._neighbour_seeds  ), 
+            _global          (v._global           ), 
+            _seed            (v._seed             ), 
+            _id              (v._id               )
         {}
 
+        void remove_duplicates() {
+            // remove duplicate entities
+            std::sort( _entity_seeds.begin(), _entity_seeds.end()); 
+            auto lastE = std::unique(_entity_seeds.begin(), _entity_seeds.end());
+            _entity_seeds.erase(lastE, _entity_seeds.end());
+            
+            // remove duplicate neighbours
+            std::sort( _neighbour_seeds.begin(), _neighbour_seeds.end()); 
+            auto lastN = std::unique(_neighbour_seeds.begin(), _neighbour_seeds.end());
+            _neighbour_seeds.erase(lastN, _neighbour_seeds.end());
+            
+            // remove entities from neighbours
+            for ( auto e = _entity_seeds.begin(); e != _entity_seeds.end(); ++e ) {
+                for ( auto n = _neighbour_seeds.begin(); n != _neighbour_seeds.end(); ++n ) {
+                    if ( *n == *e ) {
+                        _neighbour_seeds.erase(n);
+                        n--;
+                    }
+                }
+            }
+        }        
     };
 
-protected:
+public: //protected:
     const Node<GridView>*           _parent;
     Node<GridView>*                 _child[2];
     std::vector< VertexContainer* > _vertices;
@@ -183,6 +213,60 @@ protected:
         _isLeaf   = false;
     }
 
+    struct DepthFirstResult {
+        const EntitySeed es;
+        const bool       found;
+        
+        DepthFirstResult() : es(), found(false) {}
+        DepthFirstResult( const EntitySeed& es_ ) : es(es_), found(true) {}
+    };
+    
+     const DepthFirstResult searchUp( const Entity& e, const FieldVector& xg ) const {
+        const auto&     geo = e.geometry();   
+        const auto&     gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
+        const auto      xl  = geo.local( xg );
+        
+        if (gre.checkInside(xl)) {
+            if ( e.isLeaf() )
+                return DepthFirstResult( e.seed() );
+            else
+                return searchDown( e, xg );
+        } else {
+            if ( e.hasFather() )
+                return searchUp( *e.father(), xg );
+//             else {                                             // top-level reached, searchDown in neighbours
+//                 for( auto is = e.ileafbegin(); is != e.ileafend(); ++is ) {
+//                     if ( is->neighbor() ) {
+//                         const auto  ps =  is->outside();
+//                         const auto& ss = *ps;
+//                         const auto res = searchUp( ss, xg );
+//                         if ( res.found ) return res;
+//                     }
+//                 }
+//             }
+        }
+        
+        return DepthFirstResult( );
+    }
+    
+    const DepthFirstResult searchDown( const Entity& e, const FieldVector& xg ) const {
+        const auto&     geo = e.geometry();   
+        const auto&     gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
+        const auto      xl  = geo.local( xg );
+        
+        if (gre.checkInside(xl)) {
+            if ( e.isLeaf() )
+                return DepthFirstResult( e.seed() );
+            else {
+                const int level = e.level()+1;
+                for ( auto c = e.hbegin(level); c != e.hend(level); ++c )
+                    return searchDown( *c, xg );
+            }
+        } 
+        
+        return DepthFirstResult( );
+    }    
+    
 public:
 
     Node( const Node<GridView>& node ) = delete;
@@ -319,7 +403,7 @@ protected:
             
             if ( vs > 0 ) {
                 assert( vs == 1 );
-                const unsigned    vss  = _vertices[0]->_entity_seed.size();
+                const unsigned    vss  = _vertices[0]->_entity_seeds.size();
                 ts.minEntitiesPerLeaf  = std::min( ts.minEntitiesPerLeaf , vss );
                 ts.maxEntitiesPerLeaf  = std::max( ts.maxEntitiesPerLeaf , vss );
                 ts.aveEntitiesPerLeaf += static_cast<Real>( vss );
