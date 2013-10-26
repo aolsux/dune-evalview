@@ -56,7 +56,7 @@ protected:
     using Node<GV>::_parent;
     using Node<GV>::_gridView;
     using Node<GV>::_grid;
-    using Node<GV>::_vertex;
+    using Node<GV>::_vertices;
     using Node<GV>::_bounding_box;
     using Node<GV>::split;
     using Node<GV>::put;
@@ -89,8 +89,8 @@ public:
         }
     };
 
-    std::unordered_map< unsigned, unsigned > id2idxEntity;
-    std::unordered_map< unsigned, unsigned > id2idxVertex;
+    std::map< unsigned, unsigned > id2idxEntity;
+    std::map< unsigned, unsigned > id2idxVertex;
         
     std::vector<EntityContainer*>                                       _entities;
     Dune::HierarchicSearch< GridType, typename GridType::LeafIndexSet > _hr_locator;
@@ -119,28 +119,30 @@ public:
         Node<GV>::release();
         for ( auto e : _entities )
             safe_delete( e );
-        for ( auto v : _vertex )
+        for ( auto v : _vertices )
             safe_delete( v );
         _entities.clear();
-        _vertex.clear();
+        _vertices.clear();
     }
     
     void build() {
-        std::vector< VertexContainer* > _l_vertex;
+        std::vector< VertexContainer* > _l_vertices;
         
         const auto& idSet = _grid.globalIdSet();
         
+        // collect cells on leaf view
         for( auto e = _gridView.template begin<0>(); e != _gridView.template end<0>(); ++e ) {
             _entities.push_back( new EntityContainer(e->seed()) );
             id2idxEntity[idSet.id(*e)] = _entities.size()-1;
         }
         
+        // collect vertices on leaf view
         for( auto e = _gridView.template begin<dim>(); e != _gridView.template end<dim>(); ++e ) {
-            _l_vertex.push_back( new VertexContainer(e->seed()) );
-            id2idxVertex[idSet.id(*e)] = _l_vertex.size()-1;
+            _l_vertices.push_back( new VertexContainer(e->seed()) );
+            id2idxVertex[idSet.id(*e)] = _l_vertices.size()-1;
         }
         
-        // create container of all entity seeds
+        // fill container of all entity seeds
         for( auto e = _gridView.template begin<0>(); e != _gridView.template end<0>(); ++e ) {
             const unsigned idx = id2idxEntity[ idSet.id(*e) ];
             const auto&    geo = e->geometry();   
@@ -153,7 +155,7 @@ public:
                 const auto& c  = *pc;
                 typename Traits::LinaVector gl = fem::asShortVector<Real, dim>( geo.global( gre.position(k,dim) ) ) ;
                 
-                VertexContainer* _v = _l_vertex[ id2idxVertex[ idSet.id(c) ] ];
+                VertexContainer* _v = _l_vertices[ id2idxVertex[ idSet.id(c) ] ];
                 
                 // store global coordinates of all vertices
                 _bounding_box.append(gl);
@@ -164,7 +166,7 @@ public:
         }
 
         // generate list of vertices
-        this->put( _l_vertex.begin(), _l_vertex.end() );
+        this->put( _l_vertices.begin(), _l_vertices.end() );
     }
     
     void rebuild() {
@@ -186,7 +188,7 @@ public:
     virtual void fillTreeStats( typename Node<GridView>::TreeStats& ts ) const {
         Node<GV>::fillTreeStats(ts);
         
-        ts.numVertices         = _vertex.size();
+        ts.numVertices         = _vertices.size();
         ts.aveLevel           /= static_cast<Real>( ts.numNodes );
         ts.aveLeafLevel       /= static_cast<Real>( ts.numLeafs );
         ts.aveVertices        /= static_cast<Real>( ts.numNodes );

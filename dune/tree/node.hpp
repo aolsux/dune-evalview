@@ -111,7 +111,7 @@ protected:
 protected:
     const Node<GridView>*           _parent;
     Node<GridView>*                 _child[2];
-    std::vector< VertexContainer* > _vertex;
+    std::vector< VertexContainer* > _vertices;
     const GridView&                 _gridView;
     const GridType&                 _grid;
     BoundingBox                     _bounding_box;
@@ -147,15 +147,15 @@ protected:
     // s size of p and vid TODO: remove s we dont need it
     template< class Iterator >
     void put( Iterator it_begin, Iterator it_end ) {
-        _vertex.clear();
-        _vertex.reserve( it_end - it_begin );
+        _vertices.clear();
+        _vertices.reserve( it_end - it_begin );
         for ( auto p = it_begin; p!= it_end; ++p) 
-            _vertex.push_back(*p);
-        _vertex.shrink_to_fit();
-        _isEmpty = _vertex.size() < 1;
+            _vertices.push_back(*p);
+        _vertices.shrink_to_fit();
+        _isEmpty = _vertices.size() < 1;
         
         // abort the recursion if there is only one vertex left within this node
-        if ( _vertex.size() <= 1 ) {
+        if ( _vertices.size() <= 1 ) {
             _isLeaf     = true;
             return;
         }
@@ -163,7 +163,7 @@ protected:
         split();
 
         std::vector< VertexContainer* > l,r;
-        for ( auto vec : _vertex ) {
+        for ( auto vec : _vertices ) {
             if( left(vec->_global) )
                 l.push_back( vec );
             else
@@ -219,8 +219,8 @@ public:
     }
 
     const Node*             child(const unsigned i)     const { assert( i < 2 ); return _child[i];   }
-    const VertexContainer*  vertex(const unsigned i)    const { if ( i >= _vertex.size() ) throw GridError( "Array index out of bounds i=" + asString(i) + "!", __ERROR_INFO__ ); return _vertex[i];   }
-    const unsigned          vertex_size() const { return _vertex.size(); }
+    const VertexContainer*  vertex(const unsigned i)    const { if ( i >= _vertices.size() ) throw GridError( "Array index out of bounds i=" + asString(i) + "!", __ERROR_INFO__ ); return _vertices[i];   }
+    const unsigned          vertex_size() const { return _vertices.size(); }
     const bool              isLeaf()                    const { return _isLeaf;     }
     const bool              isEmpty()                   const { return _isEmpty;    }
     const unsigned          level()                     const { return _level;      }
@@ -304,7 +304,7 @@ protected:
         ts.maxLevel = std::max( ts.maxLevel , _level );
         ts.aveLevel += static_cast<Real>(_level);
         
-        const unsigned vs = _vertex.size();
+        const unsigned vs = _vertices.size();
         ts.minVertices  = std::min( ts.minVertices , vs );
         ts.maxVertices  = std::max( ts.maxVertices , vs );
         ts.aveVertices += static_cast<Real>( vs );
@@ -319,7 +319,7 @@ protected:
             
             if ( vs > 0 ) {
                 assert( vs == 1 );
-                const unsigned    vss  = _vertex[0]->_entity_seed.size();
+                const unsigned    vss  = _vertices[0]->_entity_seed.size();
                 ts.minEntitiesPerLeaf  = std::min( ts.minEntitiesPerLeaf , vss );
                 ts.maxEntitiesPerLeaf  = std::max( ts.maxEntitiesPerLeaf , vss );
                 ts.aveEntitiesPerLeaf += static_cast<Real>( vss );
