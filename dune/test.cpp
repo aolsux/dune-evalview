@@ -728,7 +728,7 @@ int main ( int argc, char **argv ) {
 #ifdef USE_CMD_PARAM
         if ( (argc < 1) || (std::string(argv[1]) == "-p1d2") ) {
 #endif
-            typedef ALUCubeQ1Traits< double, 3, FemLocalOperator, FemFunctionOperator>   SetupTraits;
+            typedef ALUSimplexP1Traits< double, 3, FemLocalOperator, FemFunctionOperator>   SetupTraits;
             compute< SetupTraits >();
 #ifdef USE_CMD_PARAM
         } else if (std::string(argv[1]) == "-p1d3") {
