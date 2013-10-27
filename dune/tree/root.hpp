@@ -78,18 +78,18 @@ protected:
     typedef typename Traits::LinaVector         LinaVector;
     typedef typename Traits::FieldVector        FieldVector;
 
-    static constexpr unsigned dim     = Traits::dim;
-    static constexpr unsigned dimw    = Traits::dimw;
+    static constexpr unsigned dim     = Traits::dim;    //<! grid dimension
+    static constexpr unsigned dimw    = Traits::dimw;   //<! world dimension
 
 public:
-    std::map< unsigned, unsigned > id2idxEntity;
-    std::map< unsigned, unsigned > id2idxVertex;
+    std::map< unsigned, unsigned > id2idxEntity;    //<! map from global entity-id to index in _entities
+    std::map< unsigned, unsigned > id2idxVertex;    //<! map from global entity-id to index in _vertices
 
-    std::vector<EntityContainer*>                                       _entities;
+    std::vector<EntityContainer*>  _entities;       //<! EntityContainer for all codim 0 entities in GridView
 //     Dune::HierarchicSearch< GridType, typename GridType::LeafIndexSet > _hr_locator;
 
 public:
-    Root( const Root<GridView>& root ) {};
+    Root( const Root<GridView>& root ) = delete;
 
     virtual ~Root( ) {
         release();
@@ -103,6 +103,7 @@ public:
     }
 
 
+    //! bottom up release children and entity/vertex container
     virtual void release() {
         Node<GV>::release();
         for ( auto e : _entities )
