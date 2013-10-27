@@ -28,43 +28,56 @@
 //     Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.       //
 //                                                                                      //
 //**************************************************************************************//
-/*! \file */ 
+/*! \file */
 #pragma once
 
 #include <cmath>
+#include <limits>
 #include <math/helper.hpp>
 #include <math/shortvector.hpp>
 
 namespace geometry {
- 
+
 template< typename T, unsigned dim >
 class BoundingBox {
+private:
+    bool _empty;
+
 public:
     math::ShortVector< T, dim > dimension;
     math::ShortVector< T, dim > corner;
     math::ShortVector< T, dim > center;
-    
-    BoundingBox() {            
+
+    BoundingBox() {
+        _empty    = true;
         dimension = 1.;
         corner    = 0.;
         center    = corner + .5*dimension;
     }
-    
+
     BoundingBox( const math::ShortVector< T, dim >& c0, const math::ShortVector< T, dim >& d ) :
-        dimension(d), corner(c0), center( center = corner + .5*dimension )
+        _empty(false), dimension(d), corner(c0), center( center = corner + .5*dimension )
     {
     }
-    
-    BoundingBox( const BoundingBox< T, dim >& bb ) : dimension(bb.dimension), corner(bb.corner), center(bb.center) {}
-    
+
+    BoundingBox( const BoundingBox< T, dim >& bb ) : _empty(bb._empty), dimension(bb.dimension), corner(bb.corner), center(bb.center) {}
+
     const bool isInside( const math::ShortVector< T, dim >& p ) const {
         const math::ShortVector< T, dim > aux = p - corner;
-        for ( unsigned k = 0; k < dim; k++ ) 
+        for ( unsigned k = 0; k < dim; k++ )
             if ( aux(k) > dimension(k) ) return false;
         return true;
     }
-    
+
     void append( const math::ShortVector< T, dim >& p ) {
+        if ( _empty ) {
+            _empty      = false;
+            corner      = p;
+            center      = p;
+            dimension   = 0.;
+            return;
+        }
+
         const math::ShortVector< T, dim > aux = p - corner;
         for ( unsigned k = 0; k < dim; k++ ) {
             if ( aux(k) < 0. ) {
@@ -74,34 +87,34 @@ public:
                 dimension(k) = std::max( aux(k), dimension(k));
             }
         }
-        
+
         center = corner + .5*dimension;
     }
-    
+
     const BoundingBox<T, dim> split( const unsigned orientation, const T ratio, const bool left ) const {
         BoundingBox<T, dim> bb( *this );
-        
+
         if ( left ) {
             bb.dimension(orientation) *= ratio;
-        } else {        
+        } else {
             bb.corner(orientation)    += ratio*bb.dimension(orientation);
             bb.dimension(orientation) *= 1. - ratio;
         }
-        
+
         bb.center = bb.corner + .5*bb.dimension;
-        
+
         return bb;
     }
-    
+
     std::ostream& operator<< ( std::ostream& out ) const {
-        
+
         out << "lower corner    " << corner             << std::endl;
         out << "higher corner   " << corner + dimension << std::endl;
         out << "dimension       " << dimension          << std::endl;
         out << "center          " << center             << std::endl;
-                
+
         return out;
     }
 };
-    
+
 }

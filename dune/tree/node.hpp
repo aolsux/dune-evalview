@@ -51,20 +51,20 @@ public:
     struct Traits {
         typedef GV                                  GridView;
         typedef typename GridView::Grid             GridType;
-        
+
         static constexpr unsigned                   dim         = GridView::dimension;
-        static constexpr unsigned                   dimw        = GridView::dimensionworld;               
-                
+        static constexpr unsigned                   dimw        = GridView::dimensionworld;
+
         typedef typename GridView::ctype            Real;
         typedef math::ShortVector< Real, dim >      LinaVector;
         typedef Dune::FieldVector< Real, dim >      FieldVector;
-        typedef geometry::BoundingBox< Real, dim >  BoundingBox;        
+        typedef geometry::BoundingBox< Real, dim >  BoundingBox;
         typedef typename GridType::template Codim<dim>::EntitySeed          VertexSeed;
         typedef typename GridType::template Codim<dim>::EntityPointer       VertexPointer;
         typedef typename GridType::template Codim<0>::EntitySeed            EntitySeed;
         typedef typename GridType::template Codim<0>::EntityPointer         EntityPointer;
         typedef typename GridType::template Codim<0>::Entity                Entity;
-        
+
     };
 
 protected:
@@ -79,11 +79,11 @@ protected:
     typedef typename Traits::Entity         Entity;
     typedef typename Traits::GridType       GridType;
     typedef typename Traits::GridView       GridView;
-    
-    
+
+
     static constexpr unsigned dim     = Traits::dim;
     static constexpr unsigned dimw    = Traits::dimw;
-    
+
 
     struct VertexContainer
     {
@@ -91,33 +91,33 @@ protected:
         LinaVector              _global;
         VertexSeed              _seed;
         unsigned                _id;
-        
+
         VertexContainer() :
-            _entity_seeds    (  ), 
-            _global          (0.), 
+            _entity_seeds    (  ),
+            _global          (0.),
             _id              (0 )
         {}
-          
+
         VertexContainer( const VertexSeed& seed ) :
-            _entity_seeds    (    ), 
-            _global          (0.  ), 
-            _seed            (seed), 
+            _entity_seeds    (    ),
+            _global          (0.  ),
+            _seed            (seed),
             _id              (0   )
         {}
-        
+
         VertexContainer( const VertexContainer& v ) :
-            _entity_seeds    (v._entity_seeds     ), 
-            _global          (v._global           ), 
-            _seed            (v._seed             ), 
+            _entity_seeds    (v._entity_seeds     ),
+            _global          (v._global           ),
+            _seed            (v._seed             ),
             _id              (v._id               )
         {}
 
         void remove_duplicates() {
             // remove duplicate entities
-            std::sort( _entity_seeds.begin(), _entity_seeds.end()); 
+            std::sort( _entity_seeds.begin(), _entity_seeds.end());
             auto lastE = std::unique(_entity_seeds.begin(), _entity_seeds.end());
             _entity_seeds.erase(lastE, _entity_seeds.end());
-        }        
+        }
     };
 
 public: //protected:
@@ -128,29 +128,29 @@ public: //protected:
     const GridView&                 _gridView;
     const GridType&                 _grid;
     BoundingBox                     _bounding_box;
-    LinaVector                      _normal;            //!> the normal of the plane that splits this node    
+    LinaVector                      _normal;            //!> the normal of the plane that splits this node
     unsigned                        _orientation;       //!> the dimension that is split by this node
     unsigned                        _level;             //!> the depth of the node in the tree
     bool                            _isLeaf;
     bool                            _isEmpty;
     bool                            _balanced;
-    
-        
+
+
 protected:
     Node() = delete;
 
     //Only needed for Root!
     Node( const Node<GridView>* parent, const GridView& gv, const bool bal = false ) :
-        _parent(parent), 
-        _child({NULL, NULL}), 
-        _median(0.), 
-        _gridView(gv), 
-        _grid(_gridView.grid()), 
-        _orientation(0), 
-        _normal(0.), 
-        _level(0), 
-        _isLeaf(false), 
-        _isEmpty(true), 
+        _parent(parent),
+        _child({NULL, NULL}),
+        _median(0.),
+        _gridView(gv),
+        _grid(_gridView.grid()),
+        _orientation(0),
+        _normal(0.),
+        _level(0),
+        _isLeaf(false),
+        _isEmpty(true),
         _balanced( bal )
     {
         _normal(_orientation) = 1.;
@@ -166,17 +166,17 @@ protected:
     void put( Iterator it_begin, Iterator it_end ) {
         _vertices.clear();
         _vertices.reserve( it_end - it_begin );
-        for ( auto p = it_begin; p!= it_end; ++p) 
+        for ( auto p = it_begin; p!= it_end; ++p)
             _vertices.push_back(*p);
         _vertices.shrink_to_fit();
         _isEmpty = _vertices.size() < 1;
-        
+
         // abort the recursion if there is only one vertex left within this node
         if ( _vertices.size() <= 1 ) {
             _isLeaf     = true;
             return;
         }
-        
+
         Real     ratio   = 0;
         if ( _balanced ) {
             unsigned num = std::min(100u, (unsigned)_vertices.size());
@@ -184,16 +184,16 @@ protected:
                 for ( unsigned k = 0; k < num; k++ ) {
                     ratio += _vertices[rand()%_vertices.size()]->_global(_orientation)-_bounding_box.corner(_orientation);
                 }
-            else 
+            else
                 for ( unsigned k = 0; k < num; k++ ) {
                     ratio += _vertices[k]->_global(_orientation)-_bounding_box.corner(_orientation);
-                }    
+                }
             ratio /= num*_bounding_box.dimension(_orientation);
 
             if ( ratio > .9 ) ratio = .9;
             if ( ratio < .1 ) ratio = .1;
         } else ratio = .5;
-        
+
         split( ratio );
 
         _median = _bounding_box.corner(_orientation) + ratio*_bounding_box.dimension(_orientation);
@@ -204,9 +204,9 @@ protected:
             else
                 r.push_back( vec );
         }
-        
+
 //         std::cout << "level " << _level << ", ratio " <<  ratio << ",  l " << l.size() << ",  r " << r.size() << std::endl;
-        
+
         _child[0]->put( l.begin(), l.end() );
         _child[1]->put( r.begin(), r.end() );
     }
@@ -220,7 +220,7 @@ protected:
         _isLeaf   = false;
     }
 
-    
+
 public:
 
     Node( const Node<GridView>& node ) = delete;
@@ -228,26 +228,26 @@ public:
 
     Node( const Node<GridView>* parent, const BoundingBox& box, const unsigned level, const bool bal = false ) :
         _parent(parent),
-        _gridView(parent->_gridView), 
-        _grid(_gridView.grid()), 
+        _gridView(parent->_gridView),
+        _grid(_gridView.grid()),
         _level(level),
         _bounding_box(box),
         _normal(0.),
         _orientation(level%dim),
-        _child( {NULL, NULL} ), 
-        _median(0.), 
-        _isLeaf(false), 
-        _isEmpty(true), 
+        _child( {NULL, NULL} ),
+        _median(0.),
+        _isLeaf(false),
+        _isEmpty(true),
         _balanced(bal)
     {
-        _normal( _orientation ) = 1.;        
+        _normal( _orientation ) = 1.;
         if ( level > 1000 ) throw GridError( "Tree depth > 1000!", __ERROR_INFO__ );
     }
 
     virtual ~Node() {
         release();
     }
-    
+
     virtual void release() {
         safe_delete( _child[0] );
         safe_delete( _child[1] );
@@ -268,86 +268,86 @@ public:
         unsigned numNodes;
         unsigned numLeafs;
         unsigned numVertices;
-                
+
         unsigned minLevel;
         Real     aveLevel;
         unsigned maxLevel;
-        
+
         unsigned minLeafLevel;
         Real     aveLeafLevel;
         unsigned maxLeafLevel;
-        
+
         unsigned minVertices;
         Real     aveVertices;
         unsigned maxVertices;
-        
+
         unsigned minEntitiesPerLeaf;
         Real     aveEntitiesPerLeaf;
         unsigned maxEntitiesPerLeaf;
-        
-        TreeStats() : 
-            numNodes( 0 ), 
-            numLeafs( 0 ),         
-            numVertices( 0 ), 
-            minLevel( std::numeric_limits<unsigned>::max() ), 
-            maxLevel( std::numeric_limits<unsigned>::min() ), 
+
+        TreeStats() :
+            numNodes( 0 ),
+            numLeafs( 0 ),
+            numVertices( 0 ),
+            minLevel( std::numeric_limits<unsigned>::max() ),
+            maxLevel( std::numeric_limits<unsigned>::min() ),
             aveLevel( 0. ),
-            minLeafLevel( std::numeric_limits<unsigned>::max() ), 
-            maxLeafLevel( std::numeric_limits<unsigned>::min() ), 
-            aveLeafLevel( 0. ), 
-            minVertices( std::numeric_limits<unsigned>::max() ), 
-            maxVertices( std::numeric_limits<unsigned>::min() ), 
-            aveVertices( 0. ), 
-            minEntitiesPerLeaf( std::numeric_limits<unsigned>::max() ), 
-            maxEntitiesPerLeaf( std::numeric_limits<unsigned>::min() ), 
+            minLeafLevel( std::numeric_limits<unsigned>::max() ),
+            maxLeafLevel( std::numeric_limits<unsigned>::min() ),
+            aveLeafLevel( 0. ),
+            minVertices( std::numeric_limits<unsigned>::max() ),
+            maxVertices( std::numeric_limits<unsigned>::min() ),
+            aveVertices( 0. ),
+            minEntitiesPerLeaf( std::numeric_limits<unsigned>::max() ),
+            maxEntitiesPerLeaf( std::numeric_limits<unsigned>::min() ),
             aveEntitiesPerLeaf( 0. ) {}
-            
+
         std::ostream& operator<< ( std::ostream& out ) const {
-            
+
             out << "Number of Nodes                     " << numNodes           << std::endl;
             out << "Number of Leafs                     " << numLeafs           << std::endl;
             out << "Number of Vertices                  " << numVertices        << std::endl << std::endl;
-                    
+
             out << "Minimum Level                       " << minLevel           << std::endl;
             out << "Average Level                       " << aveLevel           << std::endl;
             out << "Maximum Level                       " << maxLevel           << std::endl << std::endl;
-            
+
             out << "Minimum Leaf Level                  " << minLeafLevel       << std::endl;
             out << "Average Leaf Level                  " << aveLeafLevel       << std::endl;
             out << "Maximum Leaf Level                  " << maxLeafLevel       << std::endl << std::endl;
-            
+
             out << "Minimum number of Vertices per Node " << minVertices        << std::endl;
             out << "Average number of Vertices per Node " << aveVertices        << std::endl;
             out << "Maximum number of Vertices per Node " << maxVertices        << std::endl << std::endl;
-            
+
             out << "Minimum number of Entities per Leaf " << minEntitiesPerLeaf << std::endl;
             out << "Average number of Entities per Leaf " << aveEntitiesPerLeaf << std::endl;
             out << "Maximum number of Entities per Leaf " << maxEntitiesPerLeaf << std::endl;
-            
+
             return out;
         }
     };
-    
+
 public:
-    
+
     virtual void fillTreeStats( TreeStats& ts ) const {
         ts.minLevel = std::min( ts.minLevel , _level );
         ts.maxLevel = std::max( ts.maxLevel , _level );
         ts.aveLevel += static_cast<Real>(_level);
-        
+
         const unsigned vs = _vertices.size();
         ts.minVertices  = std::min( ts.minVertices , vs );
         ts.maxVertices  = std::max( ts.maxVertices , vs );
         ts.aveVertices += static_cast<Real>( vs );
-        
+
         ts.numNodes++;
         if ( _isLeaf ) {
             ts.numLeafs++;
-            
+
             ts.minLeafLevel = std::min( ts.minLeafLevel , _level );
             ts.maxLeafLevel = std::max( ts.maxLeafLevel , _level );
             ts.aveLeafLevel += static_cast<Real>(_level);
-            
+
             if ( vs > 0 ) {
                 assert( vs == 1 );
                 const unsigned    vss  = _vertices[0]->_entity_seeds.size();
@@ -362,58 +362,64 @@ public:
             _child[1]->fillTreeStats( ts );
         }
     }
-    
+
     const Node* searchDown( const LinaVector& x ) const {
         if ( _isLeaf ) return this;
-            
-        if ( left(x) ) return _child[0]->searchDown(x);    
+
+        if ( left(x) ) return _child[0]->searchDown(x);
         return _child[1]->searchDown(x);
     }
-    
-    
+
+
     struct DepthFirstResult {
         const EntitySeed es;
         const bool       found;
-        
+
         DepthFirstResult() : es(), found(false) {}
         DepthFirstResult( const EntitySeed& es_ ) : es(es_), found(true) {}
         DepthFirstResult( const DepthFirstResult& r ) : es(r.es), found(r.found) {}
     };
-    
+
     struct EntityContainer {
-        EntitySeed  _seed;
-        LinaVector  _global;
-        unsigned    _id;
-        
-        EntityContainer( const EntitySeed& seed ) : _seed(seed), _global(0.), _id(0) {}
+        EntitySeed                      _seed;
+        geometry::BoundingBox<Real,dim> _bb;
+        LinaVector                      _global;
+        unsigned                        _id;
+
+        EntityContainer( const EntitySeed& seed ) : _seed(seed), _bb(), _global(0.), _id(0) {}
     };
-    
+
     const DepthFirstResult searchUp( const FieldVector& xg, const std::vector<EntityContainer*>& _entities, const Node* caller = NULL ) const {
         const auto res = searchDown( xg, _entities, caller );
         if ( res.found ) return res;
-        
+
         if ( _parent != NULL )
-            return _parent->searchUp( xg, _entities, this );        
-        
+            return _parent->searchUp( xg, _entities, this );
+
         return DepthFirstResult( );
-    } 
-    
-        
+    }
+
+
     const DepthFirstResult searchDown( const FieldVector& xg, const std::vector<EntityContainer*>& _entities, const Node* caller = NULL ) const {
         if ( _isEmpty ) return DepthFirstResult( );
-           
+
         if ( _isLeaf  ) {
+            LinaVector x;
+            for ( unsigned k = 0; k < dim; k++)
+                x(k) = xg[k];
+
             for ( auto es = vertex(0)->_entity_seeds.begin(); es != vertex(0)->_entity_seeds.end(); ++es ) {
+                if ( !_entities[*es]->_bb.isInside(x) ) continue;
                 const EntityPointer ep( _grid.entityPointer( _entities[*es]->_seed ) );
-                const Entity&   e   = *ep; 
-                const auto&     geo = e.geometry();     
+                const Entity&   e   = *ep;
+                const auto&     geo = e.geometry();
                 const auto&     gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
                 const auto      xl  = geo.local( xg );
                 if ( gre.checkInside( xl ) ) {
                     return DepthFirstResult( e.seed() );
                 }
             }
-           
+
         } else {
             if ( caller != _child[0] ) {
                 const auto res0 = _child[0]->searchDown( xg, _entities, this );
@@ -424,7 +430,7 @@ public:
                 if ( res1.found ) return res1;
             }
         }
-        
+
         return DepthFirstResult( );
     }
 };

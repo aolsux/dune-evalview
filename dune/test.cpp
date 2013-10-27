@@ -125,7 +125,7 @@ class FemLocalEvalOperator /*:
 public:
     struct Result {
         static constexpr unsigned dim     = SetupTraits::dim;
-        static constexpr unsigned dimw    = SetupTraits::dimw;        
+        static constexpr unsigned dimw    = SetupTraits::dimw;
 
         typedef typename SetupTraits::Coord BT;
 
@@ -491,7 +491,7 @@ public:
         lpSolverL( gos, fieldL, solver, tol ),
         lpSolverH( gos, fieldH, solver, tol ),
         fleo     ( gfs ),
-        pl       ( grid, fleo ), 
+        pl       ( grid, fleo ),
         root     ( view, false )
     {
     }
@@ -522,7 +522,7 @@ public:
 
         // clean up
         grid.postAdapt();
-        
+
         std::cout << CE_STATUS <<  "building k-d-Tree ..."<< CE_RESET <<  std::endl;
         ProfilerStart("rebuild.prof");
         root.rebuild();
@@ -596,7 +596,7 @@ public:
         }
 
         ProfilerStart("integrate.prof");
-        
+
         Timer t;
         t.tic();
 //         #pragma omp parallel for
@@ -651,10 +651,10 @@ public:
         vo(0) = .0;
         vn(0) = .0;
 
-        
+
         Timer t;
-        t.tic();        
-        
+        t.tic();
+
         try {
 
             typename FemLocalEvalOperator<SetupTraits>::Result du0;
@@ -677,11 +677,11 @@ public:
         } catch ( GridError& err ) {
             std::cout << CE_ERROR << err.what() << CE_RESET << std::endl;
         }
-        
+
         std::cout << CE_STATUS << "time elapsed " << t.toc() <<  CE_RESET << std::endl;
 
 //         root.printTreeStats( std::cout );
-        
+
         std::cout << CE_STATUS << "Write Trajectory to VTK" << CE_RESET << std::endl;
         traj.writeVTK( "traj.vtp" );
     }
@@ -717,7 +717,7 @@ inline void compute() {
 
 int main ( int argc, char **argv ) {
     Dune::MPIHelper::instance( argc, argv );
-    
+
     srand((unsigned)std::time(NULL));
 
     std::cout.setf( std::ios::scientific );
@@ -728,7 +728,7 @@ int main ( int argc, char **argv ) {
 #ifdef USE_CMD_PARAM
         if ( (argc < 1) || (std::string(argv[1]) == "-p1d2") ) {
 #endif
-            typedef ALUCubeQ1Traits< double, 3, FemLocalOperator, FemFunctionOperator>   SetupTraits;
+            typedef ALUSimplexP1Traits< double, 3, FemLocalOperator, FemFunctionOperator>   SetupTraits;
             compute< SetupTraits >();
 #ifdef USE_CMD_PARAM
         } else if (std::string(argv[1]) == "-p1d3") {
