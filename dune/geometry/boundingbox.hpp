@@ -78,12 +78,15 @@ public:
         center = corner + .5*dimension;
     }
     
-    const BoundingBox<T, dim> split( const unsigned orientation, const bool left ) const {
+    const BoundingBox<T, dim> split( const unsigned orientation, const T ratio, const bool left ) const {
         BoundingBox<T, dim> bb( *this );
         
-        bb.dimension(orientation) *= .5;
-        if ( !left )
-            bb.corner(orientation) += bb.dimension(orientation);
+        if ( left ) {
+            bb.dimension(orientation) *= ratio;
+        } else {        
+            bb.corner(orientation)    += ratio*bb.dimension(orientation);
+            bb.dimension(orientation) *= 1. - ratio;
+        }
         
         bb.center = bb.corner + .5*bb.dimension;
         

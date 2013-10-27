@@ -31,6 +31,8 @@
 //**************************************************************************************//
 
 #include "test.h"
+#include <omp.h>
+#include <gperftools/profiler.h>
 
 
 
@@ -490,7 +492,7 @@ public:
         lpSolverH( gos, fieldH, solver, tol ),
         fleo     ( gfs ),
         pl       ( grid, fleo ), 
-        root     ( view )
+        root     ( view, false )
     {
     }
 
@@ -522,7 +524,9 @@ public:
         grid.postAdapt();
         
         std::cout << CE_STATUS <<  "building k-d-Tree ..."<< CE_RESET <<  std::endl;
+        ProfilerStart("rebuild.prof");
         root.rebuild();
+        ProfilerStop();
         std::cout << CE_STATUS <<  "k-d-Tree statistics"<< CE_RESET <<  std::endl;
         root.printTreeStats( std::cout );
     }
@@ -591,11 +595,20 @@ public:
                 localCoarsen( gra, fieldL, {&fieldL, &fieldH} );
         }
 
-        integrate( view, fieldH );
+        ProfilerStart("integrate.prof");
         
+        Timer t;
+        t.tic();
+//         #pragma omp parallel for
+//         for ( unsigned k = 0; k < 8; k++ ) {
+            integrate( view, fieldH );
+//         }
+//         t.toc();
 
-        
-//         auto ptr = root.findEntity( math::ShortVector< Real, Traits::dim >(0.) );
+        ProfilerStop();
+
+        root.printTreeStats( std::cout );
+        std::cout << CE_STATUS << "time elapsed " << t.toc() << ",     " <<  t.toc()/omp_get_num_procs() <<  CE_RESET << std::endl;
     }
 
     void writeVTK( std::string path ) {
@@ -611,25 +624,15 @@ public:
     }
 
     typename FemLocalEvalOperator< SetupTraits >::Result rhs ( math::ShortVector<typename SetupTraits::Coord, SetupTraits::dimw>& x, const FieldU field ) {
-//         Dune::FieldVector<typename SetupTraits::Coord, SetupTraits::dimw> fv;
-//         for ( unsigned k = 0; k < Traits::dim; k++ )
-//             fv[k] = x(k);
-//         return rhs( fv, field );
-        
         auto e = root.findEntity( x );
         const auto res = pl.lop.eval( e.pointer, e.xl, field );
         return res;
     }
 
     typename FemLocalEvalOperator< SetupTraits >::Result rhs ( Dune::FieldVector<typename SetupTraits::Coord, SetupTraits::dimw>& x, const FieldU field ) {
-//         const auto res = pl.eval( x, field );
-//         if ( !res.found )
-//             throw ;
-//          return res.res;
-
-         auto e = root.findEntity( asShortVector( x) );
-         const auto res = pl.lop.eval( e.pointer, e.xl, field );
-         return res;
+        auto e = root.findEntity( asShortVector( x) );
+        const auto res = pl.lop.eval( e.pointer, e.xl, field );
+        return res;
     }
 
     void integrate ( typename SetupTraits::GridView& gv, const typename SetupTraits::FieldU& v ) {
@@ -641,10 +644,10 @@ public:
 
         Real    dt = .004;                                          // time step
         Real    fr = .02;                                           // friction
-        math::ShortVector<Real, Traits::dimw> xo( .8 );
-        math::ShortVector<Real, Traits::dimw> xn( .8 );
-        math::ShortVector<Real, Traits::dimw> vo( .04 );
-        math::ShortVector<Real, Traits::dimw> vn( .04 );
+        math::ShortVector<Real, Traits::dimw> xo( .65 );
+        math::ShortVector<Real, Traits::dimw> xn( .65 );
+        math::ShortVector<Real, Traits::dimw> vo( .07 );
+        math::ShortVector<Real, Traits::dimw> vn( .07 );
         vo(0) = .0;
         vn(0) = .0;
 
@@ -668,7 +671,7 @@ public:
                 xn = xn + .5*   dt*(vo+vn);
 
                 traj.push_back( XT<Real, Traits::dimw>(xn, t) );
-                std::cout << "\t t = " << t << "\tx = ( " << xn << " )\n";
+//                 std::cout << "\t t = " << t << "\tx = ( " << xn << " )\n";
             }
 
         } catch ( GridError& err ) {
@@ -677,7 +680,7 @@ public:
         
         std::cout << CE_STATUS << "time elapsed " << t.toc() <<  CE_RESET << std::endl;
 
-        root.printTreeStats( std::cout );
+//         root.printTreeStats( std::cout );
         
         std::cout << CE_STATUS << "Write Trajectory to VTK" << CE_RESET << std::endl;
         traj.writeVTK( "traj.vtp" );
@@ -714,6 +717,8 @@ inline void compute() {
 
 int main ( int argc, char **argv ) {
     Dune::MPIHelper::instance( argc, argv );
+    
+    srand((unsigned)std::time(NULL));
 
     std::cout.setf( std::ios::scientific );
     std::cout.precision( 4 );
@@ -723,7 +728,7 @@ int main ( int argc, char **argv ) {
 #ifdef USE_CMD_PARAM
         if ( (argc < 1) || (std::string(argv[1]) == "-p1d2") ) {
 #endif
-            typedef ALUSimplexP1Traits< double, 3, FemLocalOperator, FemFunctionOperator>   SetupTraits;
+            typedef ALUCubeQ1Traits< double, 3, FemLocalOperator, FemFunctionOperator>   SetupTraits;
             compute< SetupTraits >();
 #ifdef USE_CMD_PARAM
         } else if (std::string(argv[1]) == "-p1d3") {

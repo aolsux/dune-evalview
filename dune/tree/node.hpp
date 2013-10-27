@@ -123,6 +123,7 @@ protected:
 public: //protected:
     const Node<GridView>*           _parent;
     Node<GridView>*                 _child[2];
+    Real                            _median;
     std::vector< VertexContainer* > _vertices;
     const GridView&                 _gridView;
     const GridType&                 _grid;
@@ -132,26 +133,30 @@ public: //protected:
     unsigned                        _level;             //!> the depth of the node in the tree
     bool                            _isLeaf;
     bool                            _isEmpty;
+    bool                            _balanced;
+    
         
 protected:
     Node() = delete;
 
     //Only needed for Root!
-    Node( const Node<GridView>* parent, const GridView& gv) :
+    Node( const Node<GridView>* parent, const GridView& gv, const bool bal = false ) :
         _parent(parent), 
         _child({NULL, NULL}), 
+        _median(0.), 
         _gridView(gv), 
         _grid(_gridView.grid()), 
         _orientation(0), 
         _normal(0.), 
         _level(0), 
         _isLeaf(false), 
-        _isEmpty(true)
+        _isEmpty(true), 
+        _balanced( bal )
     {
         _normal(_orientation) = 1.;
     }
 
-    bool left (const LinaVector& p) const { return p(_orientation) < _bounding_box.center(_orientation); }
+    bool left (const LinaVector& p) const { return p(_orientation) < _median; }
     bool right(const LinaVector& p) const { return !left( p ); }
 
     // vid contain indices of all vertices that reside in the space defined by boundingbox
@@ -171,9 +176,27 @@ protected:
             _isLeaf     = true;
             return;
         }
+        
+        Real     ratio   = 0;
+        if ( _balanced ) {
+            unsigned num = std::min(100u, (unsigned)_vertices.size());
+            if ( _vertices.size() > 100u )
+                for ( unsigned k = 0; k < num; k++ ) {
+                    ratio += _vertices[rand()%_vertices.size()]->_global(_orientation)-_bounding_box.corner(_orientation);
+                }
+            else 
+                for ( unsigned k = 0; k < num; k++ ) {
+                    ratio += _vertices[k]->_global(_orientation)-_bounding_box.corner(_orientation);
+                }    
+            ratio /= num*_bounding_box.dimension(_orientation);
 
-        split();
+            if ( ratio > .9 ) ratio = .9;
+            if ( ratio < .1 ) ratio = .1;
+        } else ratio = .5;
+        
+        split( ratio );
 
+        _median = _bounding_box.corner(_orientation) + ratio*_bounding_box.dimension(_orientation);
         std::vector< VertexContainer* > l,r;
         for ( auto vec : _vertices ) {
             if( left(vec->_global) )
@@ -182,16 +205,18 @@ protected:
                 r.push_back( vec );
         }
         
+//         std::cout << "level " << _level << ", ratio " <<  ratio << ",  l " << l.size() << ",  r " << r.size() << std::endl;
+        
         _child[0]->put( l.begin(), l.end() );
         _child[1]->put( r.begin(), r.end() );
     }
 
-    void split() {
+    void split( const Real ratio ) {
         assert( _child[0] == NULL );
         assert( _child[1] == NULL );
         // construct the two childs
-        _child[0] = new Node( this, _bounding_box.split(_orientation,true) , _level+1 );
-        _child[1] = new Node( this, _bounding_box.split(_orientation,false), _level+1 );
+        _child[0] = new Node( this, _bounding_box.split(_orientation, ratio, true) , _level+1, _balanced && _level < 8 );
+        _child[1] = new Node( this, _bounding_box.split(_orientation, ratio, false), _level+1, _balanced && _level < 8 );
         _isLeaf   = false;
     }
 
@@ -201,7 +226,7 @@ public:
     Node( const Node<GridView>& node ) = delete;
     Node& operator = ( const Node<GridView>& node ) = delete;
 
-    Node( const Node<GridView>* parent, const BoundingBox& box, const unsigned level) :
+    Node( const Node<GridView>* parent, const BoundingBox& box, const unsigned level, const bool bal = false ) :
         _parent(parent),
         _gridView(parent->_gridView), 
         _grid(_gridView.grid()), 
@@ -210,8 +235,10 @@ public:
         _normal(0.),
         _orientation(level%dim),
         _child( {NULL, NULL} ), 
+        _median(0.), 
         _isLeaf(false), 
-        _isEmpty(true)
+        _isEmpty(true), 
+        _balanced(bal)
     {
         _normal( _orientation ) = 1.;        
         if ( level > 1000 ) throw GridError( "Tree depth > 1000!", __ERROR_INFO__ );
@@ -231,6 +258,7 @@ public:
     const unsigned          vertex_size()               const { return _vertices.size(); }
     const bool              isLeaf()                    const { return _isLeaf;     }
     const bool              isEmpty()                   const { return _isEmpty;    }
+    const bool              balanced()                  const { return _balanced;    }
     const unsigned          level()                     const { return _level;      }
     const unsigned          orientation()               const { return _orientation;}
     const LinaVector        normal()                    const { return _normal;     }
@@ -375,11 +403,10 @@ public:
         if ( _isEmpty ) return DepthFirstResult( );
            
         if ( _isLeaf  ) {
-           
             for ( auto es = vertex(0)->_entity_seeds.begin(); es != vertex(0)->_entity_seeds.end(); ++es ) {
                 const EntityPointer ep( _grid.entityPointer( _entities[*es]->_seed ) );
                 const Entity&   e   = *ep; 
-                const auto&     geo = e.geometry();   
+                const auto&     geo = e.geometry();     
                 const auto&     gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
                 const auto      xl  = geo.local( xg );
                 if ( gre.checkInside( xl ) ) {
@@ -396,7 +423,7 @@ public:
                 const auto res1 = _child[1]->searchDown( xg, _entities, this );
                 if ( res1.found ) return res1;
             }
-        }        
+        }
         
         return DepthFirstResult( );
     }

@@ -86,7 +86,7 @@ public:
     std::map< unsigned, unsigned > id2idxVertex;
         
     std::vector<EntityContainer*>                                       _entities;
-    Dune::HierarchicSearch< GridType, typename GridType::LeafIndexSet > _hr_locator;
+//     Dune::HierarchicSearch< GridType, typename GridType::LeafIndexSet > _hr_locator;
     
 public:
     Root( const Root<GridView>& root ) {};
@@ -95,9 +95,9 @@ public:
         release();
     };
 
-    Root( const GridView& gridview ) :
-        Node<GV>(NULL,gridview), 
-        _hr_locator( gridview.grid(), gridview.grid().leafIndexSet() )
+    Root( const GridView& gridview, const bool bal = false ) :
+        Node<GV>(NULL,gridview, bal)
+//         _hr_locator( gridview.grid(), gridview.grid().leafIndexSet() )
     {
         build();
     }

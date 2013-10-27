@@ -28,5 +28,5 @@ target_link_libraries( test ${DUNE_LIBRARIES}
                             ${Boost_SYSTEM_LIBRARY}
                             ${Boost_SERIALIZATION_LIBRARY}
                             ${MPI_LIBRARIES}
-                            ${VTK_LIBRARIES} )
+                            ${VTK_LIBRARIES} profiler )
 
