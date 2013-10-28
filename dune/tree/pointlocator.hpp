@@ -49,9 +49,15 @@ namespace tree {
 
 template< class GV >
 class PointLocator : public Node<GV> {
+//=======================================================================================================
+// public traits
+//=======================================================================================================
 public:
     typedef typename Node<GV>::Traits Traits;
 
+//=======================================================================================================
+// protected data
+//=======================================================================================================
 protected:
     using Node<GV>::_parent;
     using Node<GV>::_gridView;
@@ -88,6 +94,9 @@ protected:
 
     std::vector<EntityContainer*>  _entities;           //<! EntityContainer for all codim 0 entities in GridView
    
+//=======================================================================================================
+// public data
+//=======================================================================================================
 public:
     struct EntityData {
         const EntityPointer                 pointer;
@@ -99,7 +108,12 @@ public:
                     const FieldVector   xl_  ) : pointer(pointer_),  entity(entity_), xl(xl_) {}
     };
    
+   
+//=======================================================================================================
+// public methods
+//=======================================================================================================
 public:
+    //== constructor / destructor =======================================================================
     PointLocator( const PointLocator<GridView>& root ) = delete;
 
     PointLocator( const GridView& gridview, const bool bal = false ) :
@@ -123,6 +137,7 @@ public:
         _vertices.clear();
     }
 
+    //== build tree =====================================================================================
     void build() {
         std::vector< VertexContainer* > _l_vertices;
 
@@ -185,6 +200,7 @@ public:
         this->update();
     }
     
+    //== search / iterate tree ==========================================================================
     const EntityData findEntity( const LinaVector& x )  {
         // find node containing all possible cells
         const Node<GridView>* node = searchDown( x );
@@ -210,6 +226,7 @@ public:
         return LevelView<GridView>( *this, level );
     }
 
+    //== information on tree ============================================================================
     virtual void fillTreeStats( typename Node<GridView>::TreeStats& ts ) {
         ts.depth = static_cast<unsigned>(this->updateBalanceFactor());
         

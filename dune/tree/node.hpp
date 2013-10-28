@@ -46,6 +46,9 @@ namespace tree {
 
 template< class GV >
 class Node {
+//=======================================================================================================
+// public traits
+//=======================================================================================================
 public:
     struct Traits {
         typedef GV                                  GridView;
@@ -66,6 +69,10 @@ public:
 
     };
 
+    
+//=======================================================================================================
+// protected data
+//=======================================================================================================
 protected:
     typedef typename Traits::Real           Real;
     typedef typename Traits::LinaVector     LinaVector;
@@ -134,7 +141,12 @@ protected:
     bool                            _balanced;
     int                             _balance_factor;
 
+    
+//=======================================================================================================
+// protected methods
+//=======================================================================================================
 protected:    
+    //== constructot / destructor =======================================================================
     //Only needed for Root!
     Node( Node<GridView>* parent, const GridView& gv, const bool bal = false ) :
         _parent(parent),
@@ -172,6 +184,7 @@ protected:
         if ( level > 1000 ) throw GridError( "Tree depth > 1000!", __ERROR_INFO__ );
     }
     
+    //== build tree =====================================================================================
     bool left (const LinaVector& p) const { return p(_orientation) < _median; }
     bool right(const LinaVector& p) const { return !left( p ); }
     
@@ -263,7 +276,8 @@ protected:
         _child[1] = new Node( this, _bounding_box.split(_orientation, ratio, false), _level+1, _orientation+1, _balanced );
         _isLeaf   = false;
     }
-
+    
+    //== balance tree ===================================================================================
     void leftRotate() {
         if ( _parent   == NULL ) return;                                    // can't rotate root
         if ( _child[0] == NULL ) return;                                    // can't rotate leafs
@@ -320,6 +334,7 @@ protected:
         }
     }
     
+    //== update state machine ===========================================================================
     const int updateBalanceFactor() {
         const int l = _child[0] ? _child[0]->updateBalanceFactor() : 0;
         const int r = _child[1] ? _child[1]->updateBalanceFactor() : 0;
@@ -351,6 +366,7 @@ protected:
         _child[1]->updateBoundingBox();
     }
     
+    //== optimize for size ==============================================================================
     void deleteEmpty() {
         if ( _child[0] ) {
             _child[0]->deleteEmpty();
@@ -400,6 +416,9 @@ protected:
         }
     }
     
+//=======================================================================================================
+// public data
+//=======================================================================================================
 public:
     struct TreeStats {
         unsigned depth;
@@ -504,7 +523,11 @@ public:
     const unsigned          orientation()               const { return _orientation;}
     const LinaVector        normal()                    const { return _normal;     }
     
+//=======================================================================================================
+// public methods
+//=======================================================================================================
 public:
+    //== constructot / destructor =======================================================================
     Node() = delete;
     Node( const Node<GridView>& node ) = delete;
     Node& operator = ( const Node<GridView>& node ) = delete;
@@ -518,12 +541,14 @@ public:
         safe_delete( _child[1] );
     }
     
+    //== update state machine  ==========================================================================
     void update() {
         updateState();
         updateBoundingBox();
         updateBalanceFactor();
     }
     
+    //== information on tree ============================================================================
     virtual void fillTreeStats( TreeStats& ts ) const {
         ts.minLevel = std::min( ts.minLevel , _level );
         ts.maxLevel = std::max( ts.maxLevel , _level );
@@ -561,6 +586,8 @@ public:
         }
     }
 
+    
+    //== search / iterate tree  =========================================================================
     const Node* searchDown( const LinaVector& x ) const {
         if ( _isLeaf ) return this;
 
