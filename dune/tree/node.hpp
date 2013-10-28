@@ -121,7 +121,7 @@ protected:
     };
 
 public: //protected:
-    const Node<GridView>*           _parent;
+    Node<GridView>*                 _parent;
     Node<GridView>*                 _child[2];
     Real                            _median;
     std::vector< VertexContainer* > _vertices;
@@ -134,13 +134,14 @@ public: //protected:
     bool                            _isLeaf;
     bool                            _isEmpty;
     bool                            _balanced;
+    int                             _balance_factor;
 
 
-protected:
+public:
     Node() = delete;
 
     //Only needed for Root!
-    Node( const Node<GridView>* parent, const GridView& gv, const bool bal = false ) :
+    Node( Node<GridView>* parent, const GridView& gv, const bool bal = false ) :
         _parent(parent),
         _child({NULL, NULL}),
         _median(0.),
@@ -151,13 +152,17 @@ protected:
         _level(0),
         _isLeaf(false),
         _isEmpty(true),
-        _balanced( bal )
+        _balanced( bal ), 
+        _balance_factor(0)
     {
         _normal(_orientation) = 1.;
     }
 
     bool left (const LinaVector& p) const { return p(_orientation) < _median; }
     bool right(const LinaVector& p) const { return !left( p ); }
+    
+    bool left (const LinaVector& p, const unsigned ori ) const { return p(ori) < _median; }
+    bool right(const LinaVector& p, const unsigned ori ) const { return !left( p, ori ); }
 
     // vid contain indices of all vertices that reside in the space defined by boundingbox
     // p array of global space coordinates corresponding to the indices stored int vid
@@ -177,24 +182,22 @@ protected:
             return;
         }
 
-        Real     ratio   = 0;
-        if ( _balanced ) {
-            unsigned num = std::min(100u, (unsigned)_vertices.size());
-            if ( _vertices.size() > 100u )
-                for ( unsigned k = 0; k < num; k++ ) {
-                    ratio += _vertices[rand()%_vertices.size()]->_global(_orientation)-_bounding_box.corner(_orientation);
-                }
-            else
-                for ( unsigned k = 0; k < num; k++ ) {
-                    ratio += _vertices[k]->_global(_orientation)-_bounding_box.corner(_orientation);
-                }
-            ratio /= num*_bounding_box.dimension(_orientation);
-
-            if ( ratio > .9 ) ratio = .9;
-            if ( ratio < .1 ) ratio = .1;
-        } else ratio = .5;
-
-        split( ratio );
+        Real ratio = .5;
+//         if ( _balanced ) {
+//             LinaVector cm = 0.;
+//             for ( auto vec : _vertices )        
+//                 cm += vec->_global - _bounding_box.center;
+//             cm /= _vertices.size();
+//             for ( unsigned k = 0; k < dim; k++ )
+//                 cm(k) /= _bounding_box.dimension(k);
+//             std::cout << "cm  " << cm << "   ";            
+//             unsigned o = rand()%dim;
+//             for ( unsigned k = 0; k < dim; k++ )
+//                 if ( cm(k)*cm(k) < cm(o)*cm(o) ) o = k;
+//             
+//             ratio           = .5+cm(o);
+//             _orientation    = o;
+//         }
 
         _median = _bounding_box.corner(_orientation) + ratio*_bounding_box.dimension(_orientation);
         std::vector< VertexContainer* > l,r;
@@ -205,8 +208,8 @@ protected:
                 r.push_back( vec );
         }
 
+        split( ratio );
 //         std::cout << "level " << _level << ", ratio " <<  ratio << ",  l " << l.size() << ",  r " << r.size() << std::endl;
-
         _child[0]->put( l.begin(), l.end() );
         _child[1]->put( r.begin(), r.end() );
     }
@@ -215,25 +218,48 @@ protected:
         assert( _child[0] == NULL );
         assert( _child[1] == NULL );
         // construct the two childs
-        _child[0] = new Node( this, _bounding_box.split(_orientation, ratio, true) , _level+1, _balanced && _level < 8 );
-        _child[1] = new Node( this, _bounding_box.split(_orientation, ratio, false), _level+1, _balanced && _level < 8 );
+        _child[0] = new Node( this, _bounding_box.split(_orientation, ratio, true) , _level+1, _orientation+1, _balanced );
+        _child[1] = new Node( this, _bounding_box.split(_orientation, ratio, false), _level+1, _orientation+1, _balanced );
+        _isLeaf   = false;
+    }
+    
+    void split( const Real ratio, const unsigned lo, const unsigned ro ) {
+        assert( _child[0] == NULL );
+        assert( _child[1] == NULL );
+        // construct the two childs
+        _child[0] = new Node( this, _bounding_box.split(_orientation, ratio, true) , _level+1, lo, _balanced );
+        _child[1] = new Node( this, _bounding_box.split(_orientation, ratio, false), _level+1, ro, _balanced );
         _isLeaf   = false;
     }
 
-
+    const int updateBalanceFactor() {
+        if ( _isLeaf ) {
+            return 1;
+        } 
+        
+        const int l = _child[0] ? _child[0]->updateBalanceFactor() : 0;
+        const int r = _child[1] ? _child[1]->updateBalanceFactor() : 0;
+        
+        _balance_factor = l-r;
+        
+//         std::cout << "level " << _level << ",   l " <<  l << ",   r " <<  r << ",   bf " <<  _balance_factor << std::endl;
+        
+        return std::max( l, r ) + 1;
+    }
+    
 public:
 
     Node( const Node<GridView>& node ) = delete;
     Node& operator = ( const Node<GridView>& node ) = delete;
 
-    Node( const Node<GridView>* parent, const BoundingBox& box, const unsigned level, const bool bal = false ) :
+    Node( Node<GridView>* parent, const BoundingBox& box, const unsigned level, const unsigned ori, const bool bal ) :
         _parent(parent),
         _gridView(parent->_gridView),
         _grid(_gridView.grid()),
         _level(level),
         _bounding_box(box),
         _normal(0.),
-        _orientation(level%dim),
+        _orientation(ori%dim),
         _child( {NULL, NULL} ),
         _median(0.),
         _isLeaf(false),
@@ -265,6 +291,8 @@ public:
 
 public:
     struct TreeStats {
+        unsigned depth;
+        
         unsigned numNodes;
         unsigned numLeafs;
         unsigned numVertices;
@@ -286,6 +314,7 @@ public:
         unsigned maxEntitiesPerLeaf;
 
         TreeStats() :
+            depth( 0 ),
             numNodes( 0 ),
             numLeafs( 0 ),
             numVertices( 0 ),
@@ -303,7 +332,8 @@ public:
             aveEntitiesPerLeaf( 0. ) {}
 
         std::ostream& operator<< ( std::ostream& out ) const {
-
+            out << "Depth                               " << depth              << std::endl << std::endl;
+        
             out << "Number of Nodes                     " << numNodes           << std::endl;
             out << "Number of Leafs                     " << numLeafs           << std::endl;
             out << "Number of Vertices                  " << numVertices        << std::endl << std::endl;
@@ -349,7 +379,7 @@ public:
             ts.aveLeafLevel += static_cast<Real>(_level);
 
             if ( vs > 0 ) {
-                assert( vs == 1 );
+//                 assert( vs == 1 );
                 const unsigned    vss  = _vertices[0]->_entity_seeds.size();
                 ts.minEntitiesPerLeaf  = std::min( ts.minEntitiesPerLeaf , vss );
                 ts.maxEntitiesPerLeaf  = std::max( ts.maxEntitiesPerLeaf , vss );
@@ -433,6 +463,8 @@ public:
 
         return DepthFirstResult( );
     }
+    
+    
 };
 
 

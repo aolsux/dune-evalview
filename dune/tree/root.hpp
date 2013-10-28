@@ -58,6 +58,8 @@ protected:
     using Node<GV>::_grid;
     using Node<GV>::_vertices;
     using Node<GV>::_bounding_box;
+    using Node<GV>::_balance_factor;
+    using Node<GV>::_child;
     using Node<GV>::split;
     using Node<GV>::put;
     using Node<GV>::searchDown;
@@ -158,6 +160,10 @@ public:
 
         // generate list of vertices
         this->put( _l_vertices.begin(), _l_vertices.end() );
+        this->updateBalanceFactor();
+//         _child[0]->balance();
+//         _child[1]->balance();
+//         this->reput();
     }
 
     void rebuild() {
@@ -165,18 +171,20 @@ public:
         build();
     }
 
-     // iterate over all leafs of the node
+     //! iterate over all leafs of the node
     LeafView<GridView> leafView() const {
         return LeafView<GridView>( *this );
     }
 
-     // iterate over all leafs of the node
+     //! iterate over all leafs of the node
     LevelView<GridView> levelView(unsigned level) const {
         return LevelView<GridView>( *this, level );
     }
 
 
-    virtual void fillTreeStats( typename Node<GridView>::TreeStats& ts ) const {
+    virtual void fillTreeStats( typename Node<GridView>::TreeStats& ts ) {
+        ts.depth = static_cast<unsigned>(this->updateBalanceFactor());
+        
         Node<GV>::fillTreeStats(ts);
 
         ts.numVertices         = _vertices.size();
@@ -186,7 +194,7 @@ public:
         ts.aveEntitiesPerLeaf /= static_cast<Real>( ts.numLeafs );
     }
 
-    void printTreeStats( std::ostream& out ) const {
+    void printTreeStats( std::ostream& out ) {
         typename Node<GridView>::TreeStats ts;
         fillTreeStats(ts);
         ts.operator<<(out) << std::endl;

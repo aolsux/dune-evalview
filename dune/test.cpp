@@ -608,7 +608,7 @@ public:
         ProfilerStop();
 
         root.printTreeStats( std::cout );
-        std::cout << CE_STATUS << "time elapsed " << t.toc() << ",     " <<  t.toc()/omp_get_num_procs() <<  CE_RESET << std::endl;
+//         std::cout << CE_STATUS << "time elapsed " << t.toc() << ",     " <<  t.toc()/omp_get_num_procs() <<  CE_RESET << std::endl;
     }
 
     void writeVTK( std::string path ) {
@@ -682,8 +682,8 @@ public:
 
 //         root.printTreeStats( std::cout );
 
-        std::cout << CE_STATUS << "Write Trajectory to VTK" << CE_RESET << std::endl;
-        traj.writeVTK( "traj.vtp" );
+//         std::cout << CE_STATUS << "Write Trajectory to VTK" << CE_RESET << std::endl;
+//         traj.writeVTK( "traj.vtp" );
     }
 
 
@@ -709,8 +709,8 @@ inline void compute() {
     std::cout << CE_STATUS <<  "Grid information FINAL "<< CE_RESET <<  std::endl;
     Dune::gridinfo( *pgrid );
 
-    std::cout << CE_STATUS <<  "Write solution to VTK\n" <<  CE_RESET;
-    femTest.writeVTK( "hang_test" );
+//     std::cout << CE_STATUS <<  "Write solution to VTK\n" <<  CE_RESET;
+//     femTest.writeVTK( "hang_test" );
 }
 
 
