@@ -602,13 +602,17 @@ public:
 //         #pragma omp parallel for
 //         for ( unsigned k = 0; k < 8; k++ ) {
             integrate( view, fieldH );
+
 //         }
-//         t.toc();
+        t.toc();
 
         ProfilerStop();
 
         root.printTreeStats( std::cout );
 //         std::cout << CE_STATUS << "time elapsed " << t.toc() << ",     " <<  t.toc()/omp_get_num_procs() <<  CE_RESET << std::endl;
+
+
+            benchmark();
     }
 
     void writeVTK( std::string path ) {
@@ -682,10 +686,52 @@ public:
 
 //         root.printTreeStats( std::cout );
 
-//         std::cout << CE_STATUS << "Write Trajectory to VTK" << CE_RESET << std::endl;
-//         traj.writeVTK( "traj.vtp" );
+        std::cout << CE_STATUS << "Write Trajectory to VTK" << CE_RESET << std::endl;
+        traj.writeVTK( "traj.vtp" );
     }
 
+    
+    void benchmark() {
+        const unsigned nV = 100;
+        const unsigned nL = 2000;
+        std::cout << CE_STATUS << "Fill random global coord buffer" << CE_RESET << std::endl;
+        std::vector< typename Traits::LinaVector  > lv; lv.reserve(nV);
+        std::vector< typename Traits::FieldVector > fv; fv.reserve(nV);
+        for ( unsigned k = 0; k < nV; k++ ) {
+            typename Traits::LinaVector     l;
+            typename Traits::FieldVector    f;
+            for ( unsigned d = 0; d < Traits::dim; d++ ) {
+                l(d) = 2.*drand48()-1.;
+                f[d] = l(d);
+            }
+            lv.push_back(l);
+            fv.push_back(f);
+        }
+        
+        Timer t;
+        t.tic();
+        std::cout << CE_STATUS << "kd-tree" << CE_RESET << std::endl;
+        for ( unsigned l = 0; l < nL; l++ ) {
+            for ( unsigned k = 0; k < nV; k++ ) {
+                auto ed = root.findEntity( lv[k] );
+            }
+        }
+        const Real ta = t.toc();
+        std::cout << CE_STATUS << "hr-tree" << CE_RESET << std::endl;
+        t.tic();
+        for ( unsigned l = 0; l < nL/200; l++ ) {
+            for ( unsigned k = 0; k < nV; k++ ) {
+                typename Traits::EntityPointer ep( root._hr_locator.findEntity( fv[k] ) );
+                const auto&     e   = *ep;
+                const auto&     geo = e.geometry();
+                const auto&     gre = Dune::GenericReferenceElements< Real, Traits::dim >::general(geo.type());
+                const auto      xl  = geo.local( fv[k] );
+            }
+        }
+        const Real tb = t.toc();
+        
+        std::cout << CE_STATUS << "SPEED-UP  " << CE_RESET << 200.*tb/ta << "x" << std::endl;
+    }
 
 };
 
@@ -709,8 +755,8 @@ inline void compute() {
     std::cout << CE_STATUS <<  "Grid information FINAL "<< CE_RESET <<  std::endl;
     Dune::gridinfo( *pgrid );
 
-//     std::cout << CE_STATUS <<  "Write solution to VTK\n" <<  CE_RESET;
-//     femTest.writeVTK( "hang_test" );
+    std::cout << CE_STATUS <<  "Write solution to VTK\n" <<  CE_RESET;
+    femTest.writeVTK( "hang_test" );
 }
 
 

@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <geometry/boundingbox.hpp>
+
 #include <fem/dune.h>
 #include <fem/boundary.hpp>
 #include <fem/hierarchical.hpp>
@@ -85,6 +87,14 @@ struct ALUSimplexP1Traits {
     {
         return Dune::StructuredGridFactory<GridType>::createSimplexGrid(lowerLeft, upperRight, elements);
     }
+    
+    typedef math::ShortVector< Real, dim >      LinaVector;
+    typedef Dune::FieldVector< Real, dim >      FieldVector;
+    typedef geometry::BoundingBox< Real, dim >  BoundingBox;
+    typedef typename GridType::template Codim<dim>::EntitySeed          VertexSeed;
+    typedef typename GridType::template Codim<dim>::EntityPointer       VertexPointer;
+    typedef typename GridType::template Codim<0>::EntitySeed            EntitySeed;
+    typedef typename GridType::template Codim<0>::EntityPointer         EntityPointer;
 };
 
 template< typename BT, unsigned dim_, class LocalOperator_, class FunctionOperator_ >
@@ -137,4 +147,12 @@ struct ALUCubeQ1Traits {
     {
         return Dune::StructuredGridFactory<GridType>::createCubeGrid(lowerLeft, upperRight, elements);
     }
+    
+    typedef math::ShortVector< Real, dim >      LinaVector;
+    typedef Dune::FieldVector< Real, dim >      FieldVector;
+    typedef geometry::BoundingBox< Real, dim >  BoundingBox;
+    typedef typename GridType::template Codim<dim>::EntitySeed          VertexSeed;
+    typedef typename GridType::template Codim<dim>::EntityPointer       VertexPointer;
+    typedef typename GridType::template Codim<0>::EntitySeed            EntitySeed;
+    typedef typename GridType::template Codim<0>::EntityPointer         EntityPointer;
 };

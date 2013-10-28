@@ -445,7 +445,7 @@ public:
         if (_isEmpty ) ts.numEmpty++;
             
         if ( (_child[0]==NULL) && (_child[1]==NULL) && !_isLeaf ) ts.numBadChildren++;
-        if ( (_child[0]==NULL) != (_child[1]==NULL)             ) ts.numBadChildren++;
+        if ( (_child[0]==NULL) ^  (_child[1]==NULL)             ) ts.numBadChildren++;
         
         if ( _isLeaf ) {
             ts.numLeafs++;
@@ -476,12 +476,13 @@ public:
 
 
     struct DepthFirstResult {
-        const EntitySeed es;
-        const bool       found;
+        const EntitySeed    es;
+        const FieldVector   xl;
+        const bool          found;
 
-        DepthFirstResult() : es(), found(false) {}
-        DepthFirstResult( const EntitySeed& es_ ) : es(es_), found(true) {}
-        DepthFirstResult( const DepthFirstResult& r ) : es(r.es), found(r.found) {}
+        DepthFirstResult() : es(), xl(0.), found(false) {}
+        DepthFirstResult( const EntitySeed& es_, const FieldVector& xl_ ) : es(es_), xl(xl_), found(true) {}
+        DepthFirstResult( const DepthFirstResult& r ) : es(r.es), xl(r.xl), found(r.found) {}
     };
 
     struct EntityContainer {
@@ -520,7 +521,7 @@ public:
                 const auto&     gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
                 const auto      xl  = geo.local( xg );
                 if ( gre.checkInside( xl ) ) {
-                    return DepthFirstResult( e.seed() );
+                    return DepthFirstResult( e.seed(), xl );
                 }
             }
 
