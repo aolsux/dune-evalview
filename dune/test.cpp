@@ -612,7 +612,7 @@ public:
 //         std::cout << CE_STATUS << "time elapsed " << t.toc() << ",     " <<  t.toc()/omp_get_num_procs() <<  CE_RESET << std::endl;
 
 
-            benchmark();
+//             benchmark();
     }
 
     void writeVTK( std::string path ) {

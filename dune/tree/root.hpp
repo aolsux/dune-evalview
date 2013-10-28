@@ -163,6 +163,8 @@ public:
 //         this->update();
 //         this->printTreeStats( std::cout );
         optimize();
+        this->balance();
+        this->reput();
 //         this->printTreeStats( std::cout );
     }
 

@@ -182,17 +182,7 @@ public:
             return;
         }
 
-        Real ratio = .5;
-//         if ( _balanced ) {
-//             LinaVector cm = 0.;
-//             for ( auto vec : _vertices )        
-//                 cm += vec->_global - _bounding_box.center;
-//             cm /= _vertices.size();
-//             
-//             ratio           = .5+cm(_orientation);
-//         }
-
-        _median = _bounding_box.corner(_orientation) + ratio*_bounding_box.dimension(_orientation);
+        _median = _bounding_box.corner(_orientation) + .5*_bounding_box.dimension(_orientation);
         std::vector< VertexContainer* > l,r;
         for ( auto vec : _vertices ) {
             if( left(vec->_global) )
@@ -201,10 +191,60 @@ public:
                 r.push_back( vec );
         }
 
-        split( ratio );
-//         std::cout << "level " << _level << ", ratio " <<  ratio << ",  l " << l.size() << ",  r " << r.size() << std::endl;
+        split( .5 );
         _child[0]->put( l.begin(), l.end() );
         _child[1]->put( r.begin(), r.end() );
+    }
+    
+    template< class Iterator >
+    void reput( Iterator it_begin, Iterator it_end ) {
+        _vertices.clear();
+        _vertices.reserve( it_end - it_begin );
+        for ( auto p = it_begin; p!= it_end; ++p)
+            _vertices.push_back(*p);
+        _vertices.shrink_to_fit();
+        _isEmpty = _vertices.size() < 1;
+
+        // abort the recursion if there is only one vertex left within this node
+        if ( _vertices.size() <= 1 ) {
+            _isLeaf     = true;
+            return;
+        }
+
+        _median = _bounding_box.corner(_orientation) + .5*_bounding_box.dimension(_orientation);
+        std::vector< VertexContainer* > l,r;
+        for ( auto vec : _vertices ) {
+            if( left(vec->_global) )
+                l.push_back( vec );
+            else
+                r.push_back( vec );
+        }
+
+        _child[0]->reput( l.begin(), l.end() );
+        _child[1]->reput( r.begin(), r.end() );
+    }
+    
+    void reput( ) {
+        _vertices.shrink_to_fit();
+        _isEmpty = _vertices.size() < 1;
+
+        // abort the recursion if there is only one vertex left within this node
+        if ( _vertices.size() <= 1 ) {
+            _isLeaf     = true;
+            return;
+        }
+
+        _median = _bounding_box.corner(_orientation) + .5*_bounding_box.dimension(_orientation);
+        std::vector< VertexContainer* > l,r;
+        for ( auto vec : _vertices ) {
+            if( left(vec->_global) )
+                l.push_back( vec );
+            else
+                r.push_back( vec );
+        }
+
+        _child[0]->reput( l.begin(), l.end() );
+        _child[1]->reput( r.begin(), r.end() );
     }
 
     void split( const Real ratio ) {
@@ -215,16 +255,63 @@ public:
         _child[1] = new Node( this, _bounding_box.split(_orientation, ratio, false), _level+1, _orientation+1, _balanced );
         _isLeaf   = false;
     }
-    
-    void split( const Real ratio, const unsigned lo, const unsigned ro ) {
-        assert( _child[0] == NULL );
-        assert( _child[1] == NULL );
-        // construct the two childs
-        _child[0] = new Node( this, _bounding_box.split(_orientation, ratio, true) , _level+1, lo, _balanced );
-        _child[1] = new Node( this, _bounding_box.split(_orientation, ratio, false), _level+1, ro, _balanced );
-        _isLeaf   = false;
-    }
 
+    void leftRotate() {
+        if ( _parent   == NULL ) return;                                    // can't rotate root
+        if ( _child[0] == NULL ) return;                                    // can't rotate leafs
+        if ( _child[1] == NULL ) return;                                    // can't rotate leafs
+        
+        const unsigned c    = ( _parent->_child[0] == this ) ? 0 : 1;       // which child am I? 
+        Node* anchor        = _parent;                                      // backup parent
+        _parent             = _child[1];                                    // right child to parent
+        anchor->_child[c]   = _child[1];                                    // 
+        _child[1]           = _parent->_child[0];                           // take over new parents left child
+        _child[1]->_parent  = this;
+        _parent->_child[0]  = this;                                         // make me new parents left child
+        
+        anchor->update();                                                   // update sub-tree
+    }
+    
+    void rightRotate() {
+        if ( _parent   == NULL ) return;                                    // can't rotate root
+        if ( _child[0] == NULL ) return;                                    // can't rotate leafs
+        if ( _child[1] == NULL ) return;                                    // can't rotate leafs
+        
+        const unsigned c    = ( _parent->_child[0] == this ) ? 0 : 1;       // which child am I? 
+        Node* anchor        = _parent;                                      // backup parent
+        _parent             = _child[0];                                    // left child to parent
+        anchor->_child[c]   = _child[0];                                    // 
+        _child[0]           = _parent->_child[1];                           // take over new parents left child
+        _child[0]->_parent  = this;
+        _parent->_child[1]  = this;                                         // make me new parents left child
+        
+        anchor->update();                                                   // update sub-tree
+    }
+    
+    void balance() {
+        if (_child[0]) _child[0]->balance();
+        if (_child[1]) _child[1]->balance();
+        
+        if (_isLeaf) return;
+        
+        for ( unsigned c = 0; c < 2; c++ )
+        if (_child[c]) {
+            while ( (_child[c]->_balance_factor*_child[c]->_balance_factor > 1) ) {
+                if ( _child[c]->_balance_factor < -1 ) {
+                    _child[c]->leftRotate(); 
+                    std::cout << "level a" << _level << ",   c " << c << ",   bf " <<  _child[c]->_balance_factor << std::endl;
+                    return;
+                }
+                
+                if ( _child[c]->_balance_factor > +1 ) {
+                    _child[c]->rightRotate(); 
+                    std::cout << "level b" << _level << ",   c " << c << ",   bf " <<  _child[c]->_balance_factor << std::endl;
+                    return;
+                }
+            }
+        }
+    }
+    
     const int updateBalanceFactor() {
         const int l = _child[0] ? _child[0]->updateBalanceFactor() : 0;
         const int r = _child[1] ? _child[1]->updateBalanceFactor() : 0;
@@ -238,7 +325,7 @@ public:
     
     void updateState( unsigned lv = 0 ) {
         _isEmpty = _vertices.size() < 1;
-        _isLeaf  = ((_child[0] == NULL) && (_child[1] == NULL)) || _isEmpty;
+        _isLeaf  = ((_child[0] == NULL) && (_child[1] == NULL));
         _level   = lv;
         
         if (_child[0]) _child[0]->updateState( lv + 1 );
