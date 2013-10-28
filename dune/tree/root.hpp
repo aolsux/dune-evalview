@@ -83,18 +83,24 @@ protected:
     static constexpr unsigned dim     = Traits::dim;    //<! grid dimension
     static constexpr unsigned dimw    = Traits::dimw;   //<! world dimension
 
-public:
-    std::map< unsigned, unsigned > id2idxEntity;    //<! map from global entity-id to index in _entities
-    std::map< unsigned, unsigned > id2idxVertex;    //<! map from global entity-id to index in _vertices
+    std::map< unsigned, unsigned > _id2idxEntity;       //<! map from global entity-id to index in _entities
+    std::map< unsigned, unsigned > _id2idxVertex;       //<! map from global entity-id to index in _vertices
 
-    std::vector<EntityContainer*>  _entities;       //<! EntityContainer for all codim 0 entities in GridView
-    
+    std::vector<EntityContainer*>  _entities;           //<! EntityContainer for all codim 0 entities in GridView
+   
+public:
+    struct EntityData {
+        const EntityPointer                 pointer;
+        const Entity&                       entity;
+        const FieldVector                   xl;
+
+        EntityData( const EntityPointer pointer_,
+                    const Entity&       entity_,
+                    const FieldVector   xl_  ) : pointer(pointer_),  entity(entity_), xl(xl_) {}
+    };
+   
 public:
     Root( const Root<GridView>& root ) = delete;
-
-    virtual ~Root( ) {
-        release();
-    };
 
     Root( const GridView& gridview, const bool bal = false ) :
         Node<GV>(NULL,gridview, bal)
@@ -102,6 +108,9 @@ public:
         build();
     }
 
+    virtual ~Root( ) {
+        release();
+    };
 
     //! bottom up release children and entity/vertex container
     virtual void release() {
@@ -123,19 +132,19 @@ public:
         for( auto e = _gridView.template begin<0>(); e != _gridView.template end<0>(); ++e ) {
             _entities.push_back( new EntityContainer(e->seed()) );
             _entities.back()->_id = idSet.id(*e);
-            id2idxEntity[idSet.id(*e)] = _entities.size()-1;
+            _id2idxEntity[idSet.id(*e)] = _entities.size()-1;
         }
 
         // collect vertices on leaf view
         for( auto e = _gridView.template begin<dim>(); e != _gridView.template end<dim>(); ++e ) {
             _l_vertices.push_back( new VertexContainer(e->seed()) );
             _l_vertices.back()->_id = idSet.id(*e);
-            id2idxVertex[idSet.id(*e)] = _l_vertices.size()-1;
+            _id2idxVertex[idSet.id(*e)] = _l_vertices.size()-1;
         }
 
         // fill container of all entity seeds
         for( auto e = _gridView.template begin<0>(); e != _gridView.template end<0>(); ++e ) {
-            const unsigned idx = id2idxEntity[ idSet.id(*e) ];
+            const unsigned idx = _id2idxEntity[ idSet.id(*e) ];
             const auto&    geo = e->geometry();
             const auto&    gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
 
@@ -146,7 +155,7 @@ public:
                 const auto& c  = *pc;
                 typename Traits::LinaVector gl = fem::asShortVector<Real, dim>( geo.global( gre.position(k,dim) ) ) ;
 
-                VertexContainer* _v = _l_vertices[ id2idxVertex[ idSet.id(c) ] ];
+                VertexContainer* _v = _l_vertices[ _id2idxVertex[ idSet.id(c) ] ];
 
                 // store global coordinates of all vertices
                 _bounding_box.append(gl);
@@ -163,6 +172,11 @@ public:
 //         this->reput();
 //         optimize();
     }
+    
+    void rebuild() {
+        release();
+        build();
+    }
 
     void optimize() {
             this->update();
@@ -171,21 +185,30 @@ public:
         this->update();
     }
     
-    void rebuild() {
-        release();
-        build();
-    }
+    const EntityData findEntity( const LinaVector& x )  {
+        // find node containing all possible cells
+        const Node<GridView>* node = searchDown( x );
+        const auto fx  = fem::asFieldVector(x);
+        const auto res = node->searchUp( fx, _entities, node );
 
-     //! iterate over all leafs of the node
-    LeafView<GridView> leafView() const {
+        if ( res.found ) {
+            const auto      ep  = _grid.entityPointer( res.es );
+            const Entity&   e   = *ep;
+            return EntityData( ep, e, res.xl );
+        }
+
+        throw GridError( "Global coordinates are outside the grid!", __ERROR_INFO__ );
+    }
+    
+    //! iterate over all leafs of the node
+    const LeafView<GridView>  leafView() const {
         return LeafView<GridView>( *this );
     }
 
      //! iterate over all leafs of the node
-    LevelView<GridView> levelView(unsigned level) const {
+    const LevelView<GridView> levelView(unsigned level) const {
         return LevelView<GridView>( *this, level );
     }
-
 
     virtual void fillTreeStats( typename Node<GridView>::TreeStats& ts ) {
         ts.depth = static_cast<unsigned>(this->updateBalanceFactor());
@@ -203,32 +226,6 @@ public:
         typename Node<GridView>::TreeStats ts;
         fillTreeStats(ts);
         ts.operator<<(out) << std::endl;
-    }
-
-
-    struct EntityData {
-        const EntityPointer                 pointer;
-        const Entity&                       entity;
-        const FieldVector                   xl;
-
-        EntityData( const EntityPointer pointer_,
-                    const Entity&       entity_,
-                    const FieldVector   xl_  ) : pointer(pointer_),  entity(entity_), xl(xl_) {}
-    };
-
-    const EntityData findEntity( const LinaVector& x )  {
-        // find node containing all possible cells
-        const Node<GridView>* node = searchDown( x );
-        const auto fx  = fem::asFieldVector(x);
-        const auto res = node->searchUp( fx, _entities, node );
-
-        if ( res.found ) {
-            const auto      ep  = _grid.entityPointer( res.es );
-            const Entity&   e   = *ep;
-            return EntityData( ep, e, res.xl );
-        }
-
-        throw GridError( "Global coordinates are outside the grid!", __ERROR_INFO__ );
     }
 };
 
