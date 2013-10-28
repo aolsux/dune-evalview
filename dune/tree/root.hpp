@@ -88,8 +88,7 @@ public:
     std::map< unsigned, unsigned > id2idxVertex;    //<! map from global entity-id to index in _vertices
 
     std::vector<EntityContainer*>  _entities;       //<! EntityContainer for all codim 0 entities in GridView
-    Dune::HierarchicSearch< GridType, typename GridType::LeafIndexSet > _hr_locator;
-
+    
 public:
     Root( const Root<GridView>& root ) = delete;
 
@@ -98,8 +97,7 @@ public:
     };
 
     Root( const GridView& gridview, const bool bal = false ) :
-        Node<GV>(NULL,gridview, bal), 
-        _hr_locator( gridview.grid(), gridview.grid().leafIndexSet() )
+        Node<GV>(NULL,gridview, bal)
     {
         build();
     }
@@ -160,28 +158,16 @@ public:
 
         // generate list of vertices
         this->put( _l_vertices.begin(), _l_vertices.end() );
-//         this->update();
-//         this->printTreeStats( std::cout );
         optimize();
-        this->balance();
-        this->reput();
-//         this->printTreeStats( std::cout );
+//         this->balance();
+//         this->reput();
+//         optimize();
     }
 
     void optimize() {
-//         unsigned n = 0;
-//         while ( true ) {
             this->update();
-//             typename Node<GridView>::TreeStats ts;
-//             fillTreeStats(ts);
-//             if ( ts.numNodes < 2 ) break;
             this->deleteEmpty();
             this->removeSingles();
-//             if ( n == ts.numNodes )
-//                 break;
-//             else
-//                 n = ts.numNodes;
-//         }
         this->update();
     }
     
@@ -239,22 +225,8 @@ public:
         if ( res.found ) {
             const auto      ep  = _grid.entityPointer( res.es );
             const Entity&   e   = *ep;
-//             const auto&     geo = e.geometry();
-//             const auto&     gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
-//             const auto      xl  = geo.local( fem::asFieldVector(x));
             return EntityData( ep, e, res.xl );
         }
-
-//         const EntityPointer ep( _hr_locator.findEntity( fem::asFieldVector(x) ) );
-//         const Entity&   e   = *ep;
-//         const auto&     geo = e.geometry();
-//         const auto&     gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
-//         const auto      xl  = geo.local( fem::asFieldVector(x));
-//         return EntityData( ep, e, xl );
-        // eff              100%
-        // kd-tree          9.8000e-01 111.8x speed-up
-        // hr-loc           1.0960e+02
-        // pnt-loc          1.0906e+02
 
         throw GridError( "Global coordinates are outside the grid!", __ERROR_INFO__ );
     }

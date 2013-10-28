@@ -39,7 +39,6 @@
 #include <utils/utils.hpp>
 #include <geometry/boundingbox.hpp>
 #include <assert.h>
-#include <boost/iterator/iterator_concepts.hpp>
 #include <fem/dune.h>
 
 namespace tree {
@@ -174,13 +173,11 @@ public:
         for ( auto p = it_begin; p!= it_end; ++p)
             _vertices.push_back(*p);
         _vertices.shrink_to_fit();
-        _isEmpty = _vertices.size() < 1;
 
+        _isEmpty = _vertices.size() <  1;
+        _isLeaf  = _vertices.size() == 1;
         // abort the recursion if there is only one vertex left within this node
-        if ( _vertices.size() <= 1 ) {
-            _isLeaf     = true;
-            return;
-        }
+        if ( _isLeaf || _isEmpty ) return;
 
         _median = _bounding_box.corner(_orientation) + .5*_bounding_box.dimension(_orientation);
         std::vector< VertexContainer* > l,r;
@@ -203,14 +200,12 @@ public:
         for ( auto p = it_begin; p!= it_end; ++p)
             _vertices.push_back(*p);
         _vertices.shrink_to_fit();
-        _isEmpty = _vertices.size() < 1;
-
+        
+        _isEmpty = _vertices.size() <  1;
+        _isLeaf  = _vertices.size() == 1;
         // abort the recursion if there is only one vertex left within this node
-        if ( _vertices.size() <= 1 ) {
-            _isLeaf     = true;
-            return;
-        }
-
+        if ( _isLeaf || _isEmpty ) return;
+            
         _median = _bounding_box.corner(_orientation) + .5*_bounding_box.dimension(_orientation);
         std::vector< VertexContainer* > l,r;
         for ( auto vec : _vertices ) {
@@ -220,20 +215,18 @@ public:
                 r.push_back( vec );
         }
 
-        _child[0]->reput( l.begin(), l.end() );
-        _child[1]->reput( r.begin(), r.end() );
+        if (_child[0]) _child[0]->reput( l.begin(), l.end() );
+        if (_child[1]) _child[1]->reput( r.begin(), r.end() );
     }
     
     void reput( ) {
         _vertices.shrink_to_fit();
-        _isEmpty = _vertices.size() < 1;
-
+        
+        _isEmpty = _vertices.size() <  1;
+        _isLeaf  = _vertices.size() == 1;
         // abort the recursion if there is only one vertex left within this node
-        if ( _vertices.size() <= 1 ) {
-            _isLeaf     = true;
-            return;
-        }
-
+        if ( _isLeaf || _isEmpty ) return;
+            
         _median = _bounding_box.corner(_orientation) + .5*_bounding_box.dimension(_orientation);
         std::vector< VertexContainer* > l,r;
         for ( auto vec : _vertices ) {
@@ -243,8 +236,8 @@ public:
                 r.push_back( vec );
         }
 
-        _child[0]->reput( l.begin(), l.end() );
-        _child[1]->reput( r.begin(), r.end() );
+        if (_child[0]) _child[0]->reput( l.begin(), l.end() );
+        if (_child[1]) _child[1]->reput( r.begin(), r.end() );
     }
 
     void split( const Real ratio ) {

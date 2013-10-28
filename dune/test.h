@@ -40,15 +40,9 @@
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/serialization/list.hpp>
-#include <boost/concept_check.hpp>
 
 #include <utils/utils.hpp>
 #include <math/shortvector.hpp>
-// #include <math/boundingbox.hpp>
-// #include <math/math.hpp>
-// #include <math/cubemesh.hpp>
-// #include <math/boundingbox.hpp>
-// #include <error/dataerror.h>
 
 #include <fem/dune.h>
 #include <fem/helper.hpp>
@@ -57,7 +51,6 @@
 #include <tree/root.hpp>
 
 #include <vector>
-#include <deque>
 
 #include <vtkCellArray.h>
 #include <vtkSmartPointer.h>

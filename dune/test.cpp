@@ -612,7 +612,7 @@ public:
 //         std::cout << CE_STATUS << "time elapsed " << t.toc() << ",     " <<  t.toc()/omp_get_num_procs() <<  CE_RESET << std::endl;
 
 
-//             benchmark();
+        benchmark();
     }
 
     void writeVTK( std::string path ) {
@@ -692,6 +692,8 @@ public:
 
     
     void benchmark() {
+        Dune::HierarchicSearch< GridType, typename GridType::LeafIndexSet > _hr_locator( grid, grid.leafIndexSet() );
+        
         const unsigned nV = 100;
         const unsigned nL = 2000;
         std::cout << CE_STATUS << "Fill random global coord buffer" << CE_RESET << std::endl;
@@ -710,18 +712,19 @@ public:
         
         Timer t;
         t.tic();
-        std::cout << CE_STATUS << "kd-tree" << CE_RESET << std::endl;
+        std::cout << CE_STATUS << "kd-tree " << CE_RESET;
         for ( unsigned l = 0; l < nL; l++ ) {
             for ( unsigned k = 0; k < nV; k++ ) {
                 auto ed = root.findEntity( lv[k] );
             }
         }
         const Real ta = t.toc();
-        std::cout << CE_STATUS << "hr-tree" << CE_RESET << std::endl;
+        std::cout << ta << std::endl;
+        std::cout << CE_STATUS << "hr-tree " << CE_RESET;
         t.tic();
         for ( unsigned l = 0; l < nL/200; l++ ) {
             for ( unsigned k = 0; k < nV; k++ ) {
-                typename Traits::EntityPointer ep( root._hr_locator.findEntity( fv[k] ) );
+                typename Traits::EntityPointer ep( _hr_locator.findEntity( fv[k] ) );
                 const auto&     e   = *ep;
                 const auto&     geo = e.geometry();
                 const auto&     gre = Dune::GenericReferenceElements< Real, Traits::dim >::general(geo.type());
@@ -729,7 +732,7 @@ public:
             }
         }
         const Real tb = t.toc();
-        
+        std::cout << ta << std::endl;
         std::cout << CE_STATUS << "SPEED-UP  " << CE_RESET << 200.*tb/ta << "x" << std::endl;
     }
 
