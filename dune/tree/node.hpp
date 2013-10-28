@@ -119,7 +119,6 @@ protected:
         }
     };
 
-public: //protected:
     Node<GridView>*                 _parent;
     Node<GridView>*                 _child[2];
     Real                            _median;
@@ -135,10 +134,7 @@ public: //protected:
     bool                            _balanced;
     int                             _balance_factor;
 
-
-public:
-    Node() = delete;
-
+protected:    
     //Only needed for Root!
     Node( Node<GridView>* parent, const GridView& gv, const bool bal = false ) :
         _parent(parent),
@@ -156,7 +152,26 @@ public:
     {
         _normal(_orientation) = 1.;
     }
-
+    
+    //Only needed for Nodes themselfs!
+    Node( Node<GridView>* parent, const BoundingBox& box, const unsigned level, const unsigned ori, const bool bal ) :
+        _parent(parent),
+        _gridView(parent->_gridView),
+        _grid(_gridView.grid()),
+        _level(level),
+        _bounding_box(box),
+        _normal(0.),
+        _orientation(ori%dim),
+        _child( {NULL, NULL} ),
+        _median(0.),
+        _isLeaf(false),
+        _isEmpty(true),
+        _balanced(bal)
+    {
+        _normal( _orientation ) = 1.;
+        if ( level > 1000 ) throw GridError( "Tree depth > 1000!", __ERROR_INFO__ );
+    }
+    
     bool left (const LinaVector& p) const { return p(_orientation) < _median; }
     bool right(const LinaVector& p) const { return !left( p ); }
     
@@ -316,7 +331,7 @@ public:
         return std::max( l, r ) + 1;
     }
     
-    void updateState( unsigned lv = 0 ) {
+    void updateState( const unsigned lv = 0 ) {
         _isEmpty = _vertices.size() < 1;
         _isLeaf  = ((_child[0] == NULL) && (_child[1] == NULL));
         _level   = lv;
@@ -334,12 +349,6 @@ public:
         
         _child[0]->updateBoundingBox();
         _child[1]->updateBoundingBox();
-    }
-    
-    void update() {
-        updateState();
-        updateBoundingBox();
-        updateBalanceFactor();
     }
     
     void deleteEmpty() {
@@ -391,48 +400,6 @@ public:
         }
     }
     
-public:
-
-    Node( const Node<GridView>& node ) = delete;
-    Node& operator = ( const Node<GridView>& node ) = delete;
-
-    Node( Node<GridView>* parent, const BoundingBox& box, const unsigned level, const unsigned ori, const bool bal ) :
-        _parent(parent),
-        _gridView(parent->_gridView),
-        _grid(_gridView.grid()),
-        _level(level),
-        _bounding_box(box),
-        _normal(0.),
-        _orientation(ori%dim),
-        _child( {NULL, NULL} ),
-        _median(0.),
-        _isLeaf(false),
-        _isEmpty(true),
-        _balanced(bal)
-    {
-        _normal( _orientation ) = 1.;
-        if ( level > 1000 ) throw GridError( "Tree depth > 1000!", __ERROR_INFO__ );
-    }
-
-    virtual ~Node() {
-        release();
-    }
-
-    virtual void release() {
-        safe_delete( _child[0] );
-        safe_delete( _child[1] );
-    }
-
-    const Node*             child (const unsigned i)    const { return _child[i]; }
-    const VertexContainer*  vertex(const unsigned i)    const { return _vertices[i]; }
-    const unsigned          vertex_size()               const { return _vertices.size(); }
-    const bool              isLeaf()                    const { return _isLeaf;     }
-    const bool              isEmpty()                   const { return _isEmpty;    }
-    const bool              balanced()                  const { return _balanced;    }
-    const unsigned          level()                     const { return _level;      }
-    const unsigned          orientation()               const { return _orientation;}
-    const LinaVector        normal()                    const { return _normal;     }
-
 public:
     struct TreeStats {
         unsigned depth;
@@ -507,9 +474,56 @@ public:
             return out;
         }
     };
+    
+    struct DepthFirstResult {
+        const EntitySeed    es;
+        const FieldVector   xl;
+        const bool          found;
 
+        DepthFirstResult() : es(), xl(0.), found(false) {}
+        DepthFirstResult( const EntitySeed& es_, const FieldVector& xl_ ) : es(es_), xl(xl_), found(true) {}
+        DepthFirstResult( const DepthFirstResult& r ) : es(r.es), xl(r.xl), found(r.found) {}
+    };
+
+    struct EntityContainer {
+        EntitySeed                      _seed;
+        geometry::BoundingBox<Real,dim> _bb;
+        LinaVector                      _global;
+        unsigned                        _id;
+
+        EntityContainer( const EntitySeed& seed ) : _seed(seed), _bb(), _global(0.), _id(0) {}
+    };
+
+    const Node*             child (const unsigned i)    const { return _child[i]; }
+    const VertexContainer*  vertex(const unsigned i)    const { return _vertices[i]; }
+    const unsigned          vertex_size()               const { return _vertices.size(); }
+    const bool              isLeaf()                    const { return _isLeaf;     }
+    const bool              isEmpty()                   const { return _isEmpty;    }
+    const bool              balanced()                  const { return _balanced;    }
+    const unsigned          level()                     const { return _level;      }
+    const unsigned          orientation()               const { return _orientation;}
+    const LinaVector        normal()                    const { return _normal;     }
+    
 public:
+    Node() = delete;
+    Node( const Node<GridView>& node ) = delete;
+    Node& operator = ( const Node<GridView>& node ) = delete;
+    
+    virtual ~Node() {
+        release();
+    }
 
+    virtual void release() {
+        safe_delete( _child[0] );
+        safe_delete( _child[1] );
+    }
+    
+    void update() {
+        updateState();
+        updateBoundingBox();
+        updateBalanceFactor();
+    }
+    
     virtual void fillTreeStats( TreeStats& ts ) const {
         ts.minLevel = std::min( ts.minLevel , _level );
         ts.maxLevel = std::max( ts.maxLevel , _level );
@@ -554,27 +568,7 @@ public:
         return _child[1]->searchDown(x);
     }
 
-
-    struct DepthFirstResult {
-        const EntitySeed    es;
-        const FieldVector   xl;
-        const bool          found;
-
-        DepthFirstResult() : es(), xl(0.), found(false) {}
-        DepthFirstResult( const EntitySeed& es_, const FieldVector& xl_ ) : es(es_), xl(xl_), found(true) {}
-        DepthFirstResult( const DepthFirstResult& r ) : es(r.es), xl(r.xl), found(r.found) {}
-    };
-
-    struct EntityContainer {
-        EntitySeed                      _seed;
-        geometry::BoundingBox<Real,dim> _bb;
-        LinaVector                      _global;
-        unsigned                        _id;
-
-        EntityContainer( const EntitySeed& seed ) : _seed(seed), _bb(), _global(0.), _id(0) {}
-    };
-
-    const DepthFirstResult searchUp( const FieldVector& xg, const std::vector<EntityContainer*>& _entities, const Node* caller = NULL ) const {
+    const DepthFirstResult  searchUp( const FieldVector& xg, const std::vector<EntityContainer*>& _entities, const Node* caller = NULL ) const {
         const auto res = searchDown( xg, _entities, caller );
         if ( res.found ) return res;
 
@@ -584,8 +578,7 @@ public:
         return DepthFirstResult( );
     }
 
-
-    const DepthFirstResult searchDown( const FieldVector& xg, const std::vector<EntityContainer*>& _entities, const Node* caller = NULL ) const {
+    const DepthFirstResult  searchDown( const FieldVector& xg, const std::vector<EntityContainer*>& _entities, const Node* caller = NULL ) const {
         if ( _isEmpty ) return DepthFirstResult( );
 
         if ( _isLeaf  ) {
