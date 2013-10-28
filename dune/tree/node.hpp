@@ -188,15 +188,8 @@ public:
 //             for ( auto vec : _vertices )        
 //                 cm += vec->_global - _bounding_box.center;
 //             cm /= _vertices.size();
-//             for ( unsigned k = 0; k < dim; k++ )
-//                 cm(k) /= _bounding_box.dimension(k);
-//             std::cout << "cm  " << cm << "   ";            
-//             unsigned o = rand()%dim;
-//             for ( unsigned k = 0; k < dim; k++ )
-//                 if ( cm(k)*cm(k) < cm(o)*cm(o) ) o = k;
 //             
-//             ratio           = .5+cm(o);
-//             _orientation    = o;
+//             ratio           = .5+cm(_orientation);
 //         }
 
         _median = _bounding_box.corner(_orientation) + ratio*_bounding_box.dimension(_orientation);
@@ -233,10 +226,6 @@ public:
     }
 
     const int updateBalanceFactor() {
-        if ( _isLeaf ) {
-            return 1;
-        } 
-        
         const int l = _child[0] ? _child[0]->updateBalanceFactor() : 0;
         const int r = _child[1] ? _child[1]->updateBalanceFactor() : 0;
         
@@ -245,6 +234,81 @@ public:
 //         std::cout << "level " << _level << ",   l " <<  l << ",   r " <<  r << ",   bf " <<  _balance_factor << std::endl;
         
         return std::max( l, r ) + 1;
+    }
+    
+    void updateState( unsigned lv = 0 ) {
+        _isEmpty = _vertices.size() < 1;
+        _isLeaf  = ((_child[0] == NULL) && (_child[1] == NULL)) || _isEmpty;
+        _level   = lv;
+        
+        if (_child[0]) _child[0]->updateState( lv + 1 );
+        if (_child[1]) _child[1]->updateState( lv + 1 );
+    }
+    
+    void updateBoundingBox() {
+        if ( _isLeaf ) return;
+            
+        const Real ratio = (_median - _bounding_box.corner(_orientation))/_bounding_box.dimension(_orientation);
+        _child[0]->_bounding_box = _bounding_box.split(_orientation, ratio, true);
+        _child[1]->_bounding_box = _bounding_box.split(_orientation, ratio, false);
+        
+        _child[0]->updateBoundingBox();
+        _child[1]->updateBoundingBox();
+    }
+    
+    void update() {
+        updateState();
+        updateBoundingBox();
+        updateBalanceFactor();
+    }
+    
+    void deleteEmpty() {
+        if ( _child[0] ) {
+            _child[0]->deleteEmpty();
+            if ( _child[0]->isEmpty() ) 
+                safe_delete(_child[0]);
+        }
+        
+        if ( _child[1] ) {
+            _child[1]->deleteEmpty();
+            if ( _child[1]->isEmpty() ) 
+                safe_delete(_child[1]);
+        }
+    }
+    
+    void removeSingles() {
+        if ( _child[0] ) _child[0]->removeSingles();
+        if ( _child[1] ) _child[1]->removeSingles();
+        
+        if ( _child[0] ) {
+            if ( (!(_child[0]->_child[0])) && (_child[0]->_child[1]) ) {
+                auto aux    = _child[0];
+                _child[0]   = aux->_child[1];
+                aux->_child[1] = NULL;
+                safe_delete( aux );
+            } 
+            if ( (!(_child[0]->_child[1])) && (_child[0]->_child[0]) ) {
+                auto aux    = _child[0];
+                _child[0]   = aux->_child[0];
+                aux->_child[0] = NULL;
+                safe_delete( aux );
+            }
+        }
+        
+        if ( _child[1] ) {
+            if ( (!(_child[1]->_child[0])) && (_child[1]->_child[1]) ) {
+                auto aux    = _child[1];
+                _child[1]   = aux->_child[1];
+                aux->_child[1] = NULL;
+                safe_delete( aux );
+            } 
+            if ( (!(_child[1]->_child[1])) && (_child[1]->_child[0]) ) {
+                auto aux    = _child[1];
+                _child[1]   = aux->_child[0];
+                aux->_child[0] = NULL;
+                safe_delete( aux );
+            }
+        }
     }
     
 public:
@@ -296,6 +360,8 @@ public:
         unsigned numNodes;
         unsigned numLeafs;
         unsigned numVertices;
+        unsigned numEmpty;
+        unsigned numBadChildren;
 
         unsigned minLevel;
         Real     aveLevel;
@@ -318,6 +384,8 @@ public:
             numNodes( 0 ),
             numLeafs( 0 ),
             numVertices( 0 ),
+            numEmpty( 0 ),
+            numBadChildren( 0 ),
             minLevel( std::numeric_limits<unsigned>::max() ),
             maxLevel( std::numeric_limits<unsigned>::min() ),
             aveLevel( 0. ),
@@ -336,7 +404,9 @@ public:
         
             out << "Number of Nodes                     " << numNodes           << std::endl;
             out << "Number of Leafs                     " << numLeafs           << std::endl;
-            out << "Number of Vertices                  " << numVertices        << std::endl << std::endl;
+            out << "Number of Vertices                  " << numVertices        << std::endl ;
+            out << "Number of empty Nodes               " << numEmpty           << std::endl ;
+            out << "Number of bad Children              " << numBadChildren     << std::endl << std::endl;
 
             out << "Minimum Level                       " << minLevel           << std::endl;
             out << "Average Level                       " << aveLevel           << std::endl;
@@ -371,6 +441,12 @@ public:
         ts.aveVertices += static_cast<Real>( vs );
 
         ts.numNodes++;
+        
+        if (_isEmpty ) ts.numEmpty++;
+            
+        if ( (_child[0]==NULL) && (_child[1]==NULL) && !_isLeaf ) ts.numBadChildren++;
+        if ( (_child[0]==NULL) != (_child[1]==NULL)             ) ts.numBadChildren++;
+        
         if ( _isLeaf ) {
             ts.numLeafs++;
 
@@ -386,10 +462,8 @@ public:
                 ts.aveEntitiesPerLeaf += static_cast<Real>( vss );
             }
         } else {
-            assert( _child[0] != NULL );
-            assert( _child[1] != NULL );
-            _child[0]->fillTreeStats( ts );
-            _child[1]->fillTreeStats( ts );
+            if (_child[0]) _child[0]->fillTreeStats( ts );
+            if (_child[1]) _child[1]->fillTreeStats( ts );
         }
     }
 
@@ -451,11 +525,11 @@ public:
             }
 
         } else {
-            if ( caller != _child[0] ) {
+            if ( (caller != _child[0]) && _child[0] ) {
                 const auto res0 = _child[0]->searchDown( xg, _entities, this );
                 if ( res0.found ) return res0;
             }
-            if ( caller != _child[1] ) {
+            if ( (caller != _child[1]) && _child[1] ) {
                 const auto res1 = _child[1]->searchDown( xg, _entities, this );
                 if ( res1.found ) return res1;
             }

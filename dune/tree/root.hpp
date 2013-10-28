@@ -160,12 +160,29 @@ public:
 
         // generate list of vertices
         this->put( _l_vertices.begin(), _l_vertices.end() );
-        this->updateBalanceFactor();
-//         _child[0]->balance();
-//         _child[1]->balance();
-//         this->reput();
+//         this->update();
+//         this->printTreeStats( std::cout );
+        optimize();
+//         this->printTreeStats( std::cout );
     }
 
+    void optimize() {
+//         unsigned n = 0;
+//         while ( true ) {
+            this->update();
+//             typename Node<GridView>::TreeStats ts;
+//             fillTreeStats(ts);
+//             if ( ts.numNodes < 2 ) break;
+            this->deleteEmpty();
+            this->removeSingles();
+//             if ( n == ts.numNodes )
+//                 break;
+//             else
+//                 n = ts.numNodes;
+//         }
+        this->update();
+    }
+    
     void rebuild() {
         release();
         build();
