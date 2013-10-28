@@ -48,7 +48,7 @@ namespace tree {
 
 
 template< class GV >
-class Root : public Node<GV> {
+class PointLocator : public Node<GV> {
 public:
     typedef typename Node<GV>::Traits Traits;
 
@@ -100,15 +100,15 @@ public:
     };
    
 public:
-    Root( const Root<GridView>& root ) = delete;
+    PointLocator( const PointLocator<GridView>& root ) = delete;
 
-    Root( const GridView& gridview, const bool bal = false ) :
+    PointLocator( const GridView& gridview, const bool bal = false ) :
         Node<GV>(NULL,gridview, bal)
     {
         build();
     }
 
-    virtual ~Root( ) {
+    virtual ~PointLocator( ) {
         release();
     };
 

@@ -32,7 +32,7 @@
 
 #pragma once
 #include <tree/node.hpp>
-#include <tree/root.hpp>
+#include <tree/pointlocator.hpp>
 
 
 namespace tree {

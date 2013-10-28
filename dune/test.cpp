@@ -455,22 +455,21 @@ protected:
 
 
 
-    FEM                     fem;
-    BCFunc                  bf;
-    Constraints             ce;
-    ConstraintsContainer    cc;
-    GridFunctionSpace       gfs;
-    LocalOperator           lop;
-    FunctionOperator        funcLop;
-    GridOperator            gos;
-    Solver                  solver;
-    FieldU                  fieldL;
-    FieldU                  fieldH;
-    LinearProblemSolver     lpSolverL;
-    LinearProblemSolver     lpSolverH;
-    FemEvalLOP              fleo;
-    PointLocator< GridType, FemEvalLOP, typename SetupTraits::Coord > pl;
-    tree::Root< GridView >  root;
+    FEM                             fem;
+    BCFunc                          bf;
+    Constraints                     ce;
+    ConstraintsContainer            cc;
+    GridFunctionSpace               gfs;
+    LocalOperator                   lop;
+    FunctionOperator                funcLop;
+    GridOperator                    gos;
+    Solver                          solver;
+    FieldU                          fieldL;
+    FieldU                          fieldH;
+    LinearProblemSolver             lpSolverL;
+    LinearProblemSolver             lpSolverH;
+    FemEvalLOP                      fleo;
+    tree::PointLocator< GridView >  root;
 
 
 public:
@@ -491,7 +490,6 @@ public:
         lpSolverL( gos, fieldL, solver, tol ),
         lpSolverH( gos, fieldH, solver, tol ),
         fleo     ( gfs ),
-        pl       ( grid, fleo ),
         root     ( view, false )
     {
     }
@@ -629,13 +627,13 @@ public:
 
     typename FemLocalEvalOperator< SetupTraits >::Result rhs ( math::ShortVector<typename SetupTraits::Coord, SetupTraits::dimw>& x, const FieldU field ) {
         auto e = root.findEntity( x );
-        const auto res = pl.lop.eval( e.pointer, e.xl, field );
+        const auto res = fleo.eval( e.pointer, e.xl, field );
         return res;
     }
 
     typename FemLocalEvalOperator< SetupTraits >::Result rhs ( Dune::FieldVector<typename SetupTraits::Coord, SetupTraits::dimw>& x, const FieldU field ) {
         auto e = root.findEntity( asShortVector( x) );
-        const auto res = pl.lop.eval( e.pointer, e.xl, field );
+        const auto res = fleo.eval( e.pointer, e.xl, field );
         return res;
     }
 

@@ -48,7 +48,7 @@
 #include <fem/helper.hpp>
 #include <fem/setuptraits.hpp>
 #include <tree/node.hpp>
-#include <tree/root.hpp>
+#include <tree/pointlocator.hpp>
 
 #include <vector>
 

@@ -31,7 +31,7 @@
 //**************************************************************************************//
 
 #pragma once
-#include <tree/root.hpp>
+#include <tree/pointlocator.hpp>
 
 
 namespace tree {

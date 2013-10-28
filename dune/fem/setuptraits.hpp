@@ -37,7 +37,6 @@
 #include <fem/dune.h>
 #include <fem/boundary.hpp>
 #include <fem/hierarchical.hpp>
-#include <fem/pointlocator.hpp>
 
 template< typename BT, unsigned dim_, class LocalOperator_, class FunctionOperator_ >
 struct ALUSimplexP1Traits {
