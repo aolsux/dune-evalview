@@ -79,7 +79,7 @@ struct ShortVector {
     * Copy-Contruct.
     *****************************************************************************************/
     ShortVector( const ShortVector< T, N >& rhs ) {
-        fast_memcpy( data, rhs.data, sizeof(T)*N );
+        /*fast_*/memcpy( data, rhs.data, sizeof(T)*N );
     }
 
     /*!***************************************************************************************
@@ -121,7 +121,7 @@ struct ShortVector {
     * Assign an other ShortVector.
     *****************************************************************************************/
     inline const ShortVector< T, N >& operator = ( const ShortVector< T, N >& rhs ) {
-        fast_memcpy( data, rhs.data, sizeof(T)*N );
+        /*fast_*/memcpy( data, rhs.data, sizeof(T)*N );
         return *this;
     }
 

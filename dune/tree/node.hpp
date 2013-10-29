@@ -157,6 +157,7 @@ protected:
         _orientation(0),
         _normal(0.),
         _level(0),
+        _bounding_box(),
         _isLeaf(false),
         _isEmpty(true),
         _balanced( bal ), 

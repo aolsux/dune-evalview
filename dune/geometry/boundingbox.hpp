@@ -68,11 +68,10 @@ protected:
     math::ShortVector< BT, dim > _dimension;
     math::ShortVector< BT, dim > _center;
     math::ShortVector< BT, dim > _upper;
-    
-    
-    inline void update() {
-        _center = _corner + (BT).5*_dimension;
-        _upper  = _corner + _dimension;
+
+    void update() {
+        _center = _corner + .5*_dimension;
+        _upper  = _corner +    _dimension;
     }
     
 public:
@@ -89,12 +88,16 @@ public:
         _corner(bb._corner), 
         _dimension(bb._dimension), 
         _center(bb._center), 
-        _upper(bb._upper) {}
+        _upper(bb._upper) 
+    {
+    }
     
-    BoundingBox( const std::vector< BT >&    bbc, const std::vector< BT >&    bbd ) :
+    BoundingBox( const std::vector< BT >& bbc, const std::vector< BT >& bbd ) :
         _origin_unknown(false), 
         _corner( bbc ), 
-        _dimension( bbd )
+        _dimension( bbd ), 
+        _center(), 
+        _upper()
     {
         update();
     }
@@ -105,6 +108,8 @@ public:
     inline const BT                  maxDimension() const;
     inline const bool                checkInside( const math::ShortVector< BT, dim >& p ) const;
     
+    inline const math::ShortVector<BT, 2*dim> asLowerUpper() const;
+    inline const math::ShortVector<BT, 2*dim> asCornerDimension() const;
     
     inline math::ShortVector< BT, dim > dimension() { return _dimension; }
     inline math::ShortVector< BT, dim > center   () { return _center;    }
@@ -142,9 +147,19 @@ public:
         update();
     }
     
-    inline const BoundingBox<BT, dim> split( const unsigned orientatio, const BT ratio, const bool left );
+    const BoundingBox<BT, dim> split( const unsigned orientation, const BT ratio, const bool left ) const;
     
     // compound assignment operators ===========================================
+    inline BoundingBox< BT, dim >& operator =( const BoundingBox<BT, dim> &rhs ) {
+        _origin_unknown = rhs._origin_unknown; 
+        _corner         = rhs._corner;
+        _dimension      = rhs._dimension;
+        _center         = rhs._center;
+        _upper          = rhs._upper;
+        update();
+        return *this;
+    }
+        
     inline BoundingBox< BT, dim >& operator+=( const math::ShortVector< BT, dim > &rhs ) {
         _corner += rhs;
         update();
@@ -192,6 +207,7 @@ const void BoundingBox< BT, dim>::include(const math::ShortVector< BT, dim>& p) 
         _dimension   = 0.;
     }
     
+    _origin_unknown = false;
     update();
 }
 
@@ -209,15 +225,17 @@ const void BoundingBox< BT, dim>::include(const BoundingBox< BT, dim>& bb) {
         _dimension       = bb._dimension;
     }
     
+    _origin_unknown = bb._origin_unknown;
     update();
 }
 
 template< typename BT, unsigned dim >
 const bool BoundingBox< BT, dim>::checkInside( const math::ShortVector< BT, dim >& p ) const {
     const math::ShortVector< BT, dim > aux = p - _corner;
+    bool res = true;
     for ( unsigned k = 0; k < dim; k++ )
-        if ( aux(k) > _dimension(k) ) return false;
-    return true;
+        res &= ( aux(k) < _dimension(k) );
+    return res;
 }
 
 template< typename BT, unsigned dim >
@@ -228,18 +246,43 @@ const void BoundingBox< BT, dim>::enlarge( const BT alpha ) {
 }
 
 template< typename BT, unsigned dim >
-inline const BoundingBox<BT, dim> BoundingBox< BT, dim>::split( const unsigned orientatio, const BT ratio, const bool left ) {
+const BoundingBox<BT, dim> BoundingBox< BT, dim>::split( const unsigned orientation, const BT ratio, const bool left ) const {
     BoundingBox< BT, dim> bb( *this );
     
     if ( left ) {
-        bb._dimension(orientatio) *=    ratio;
+        bb._dimension(orientation) *= ratio;
     } else {
-        bb._corner(orientatio)    += ratio*bb._dimension(orientatio);
-        bb._dimension(orientatio) *= 1.-ratio;
+        bb._corner(orientation)    += ratio*bb._dimension(orientation);
+        bb._dimension(orientation) *= 1.-ratio;
+    }
+     
+    bb.update();
+    
+    return bb;
+}
+
+template< typename BT, unsigned dim >
+const math::ShortVector<BT, 2*dim> BoundingBox< BT, dim>::asLowerUpper() const {
+    math::ShortVector<BT, 2*dim> res;
+    
+    for ( unsigned k = 0; k < dim; k++ ) {
+        res(k    ) = _corner(k);
+        res(k+dim) = _corner(k) + _dimension(k);
     }
     
-    bb.update();    
-    return bb;
+    return res;
+}
+
+template< typename BT, unsigned dim >
+const math::ShortVector<BT, 2*dim> BoundingBox< BT, dim>::asCornerDimension() const {
+    math::ShortVector<BT, 2*dim> res;
+    
+    for ( unsigned k = 0; k < dim; k++ ) {
+        res(k    ) = _corner(k);
+        res(k+dim) = _dimension(k);
+    }
+    
+    return res;
 }
 
 template< typename BT, unsigned dim >
