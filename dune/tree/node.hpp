@@ -279,6 +279,7 @@ protected:
     
     //== balance tree ===================================================================================
     void leftRotate() {
+        throw NotImplemented(__ERROR_INFO__);
         if ( _parent   == NULL ) return;                                    // can't rotate root
         if ( _child[0] == NULL ) return;                                    // can't rotate leafs
         if ( _child[1] == NULL ) return;                                    // can't rotate leafs
@@ -295,6 +296,7 @@ protected:
     }
     
     void rightRotate() {
+        throw NotImplemented(__ERROR_INFO__);
         if ( _parent   == NULL ) return;                                    // can't rotate root
         if ( _child[0] == NULL ) return;                                    // can't rotate leafs
         if ( _child[1] == NULL ) return;                                    // can't rotate leafs
@@ -311,6 +313,7 @@ protected:
     }
     
     void balance() {
+        throw NotImplemented(__ERROR_INFO__);
         if (_child[0]) _child[0]->balance();
         if (_child[1]) _child[1]->balance();
         
@@ -614,7 +617,7 @@ public:
                 x(k) = xg[k];
 
             for ( auto es = vertex(0)->_entity_seeds.begin(); es != vertex(0)->_entity_seeds.end(); ++es ) {
-                if ( !_entities[*es]->_bb.isInside(x) ) continue;
+                if ( !_entities[*es]->_bb.checkInside(x) ) continue;
                 const EntityPointer ep( _grid.entityPointer( _entities[*es]->_seed ) );
                 const Entity&   e   = *ep;
                 const auto&     geo = e.geometry();

@@ -173,8 +173,8 @@ public:
                 VertexContainer* _v = _l_vertices[ _id2idxVertex[ idSet.id(c) ] ];
 
                 // store global coordinates of all vertices
-                _bounding_box.append(gl);
-                _entities[idx]->_bb.append(gl);
+                _bounding_box.include(gl);
+                _entities[idx]->_bb.include(gl);
                 _v->_global = gl;
                 _v->_entity_seeds.push_back( idx );
             }

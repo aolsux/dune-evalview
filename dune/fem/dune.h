@@ -91,11 +91,15 @@
 #include <dune/pdelab/backend/istlmatrixbackend.hh>
 #include <dune/pdelab/backend/istlsolverbackend.hh>
 #include <dune/pdelab/stationary/linearproblem.hh>
+
+// #define public private 
 #include <dune/pdelab/adaptivity/adapt.hh>
-#include <dune/pdelab/common/geometrywrapper.hh>
 #include <dune/pdelab/localoperator/defaultimp.hh>
 #include <dune/pdelab/localoperator/pattern.hh>
 #include <dune/pdelab/localoperator/flags.hh>
+// #undef private
+
+#include <dune/pdelab/common/geometrywrapper.hh>
 #include <dune/pdelab/common/function.hh>
 #include <dune/pdelab/constraints/constraintsparameters.hh>
 
