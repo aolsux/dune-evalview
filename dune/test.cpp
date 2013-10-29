@@ -730,7 +730,7 @@ public:
             }
         }
         const Real tb = t.toc();
-        std::cout << ta << std::endl;
+        std::cout << 200.*tb << std::endl;
         std::cout << CE_STATUS << "SPEED-UP  " << CE_RESET << 200.*tb/ta << "x" << std::endl;
     }
 
