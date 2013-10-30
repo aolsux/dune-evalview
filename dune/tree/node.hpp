@@ -126,10 +126,43 @@ protected:
         }
     };
 
+    struct EntityContainer {
+        EntitySeed                      _seed;
+        std::vector<unsigned>           _neighbour_seeds;
+        geometry::BoundingBox<Real,dim> _bb;
+        LinaVector                      _global;
+        unsigned                        _id;
+
+        EntityContainer() :
+            _seed           (),
+            _neighbour_seeds(),
+            _bb             (), 
+            _global         (0.),
+            _id             (0)
+        {}
+        
+        EntityContainer( const EntitySeed& seed ) : _seed(seed), _neighbour_seeds(), _bb(), _global(0.), _id(0) {}
+        
+        EntityContainer( const EntityContainer& ec ) :
+            _seed           (ec._seed             ),
+            _neighbour_seeds(ec._neighbour_seeds  ),
+            _bb             (ec._bb               ), 
+            _global         (ec._global           ),
+            _id             (ec._id               )
+        {}
+        
+        void remove_duplicates() {
+            // remove duplicate entities
+            std::sort( _neighbour_seeds.begin(), _neighbour_seeds.end());
+            auto lastE = std::unique(_neighbour_seeds.begin(), _neighbour_seeds.end());
+            _neighbour_seeds.erase(lastE, _neighbour_seeds.end());
+        }
+    };
+    
     Node<GridView>*                 _parent;
     Node<GridView>*                 _child[2];
     Real                            _median;
-    std::vector< VertexContainer* > _vertices;
+    std::vector< EntityContainer* > _entities;
     const GridView&                 _gridView;
     const GridType&                 _grid;
     BoundingBox                     _bounding_box;
@@ -197,20 +230,20 @@ protected:
     // s size of p and vid TODO: remove s we dont need it
     template< class Iterator >
     void put( Iterator it_begin, Iterator it_end ) {
-        _vertices.clear();
-        _vertices.reserve( it_end - it_begin );
+        _entities.clear();
+        _entities.reserve( it_end - it_begin );
         for ( auto p = it_begin; p!= it_end; ++p)
-            _vertices.push_back(*p);
-        _vertices.shrink_to_fit();
+            _entities.push_back(*p);
+        _entities.shrink_to_fit();
 
-        _isEmpty = _vertices.size() <  1;
-        _isLeaf  = _vertices.size() == 1;
+        _isEmpty = _entities.size() <  1;
+        _isLeaf  = _entities.size() == 1;
         // abort the recursion if there is only one vertex left within this node
         if ( _isLeaf || _isEmpty ) return;
 
         _median = _bounding_box.corner(_orientation) + .5*_bounding_box.dimension(_orientation);
-        std::vector< VertexContainer* > l,r;
-        for ( auto vec : _vertices ) {
+        std::vector< EntityContainer* > l,r;
+        for ( auto vec : _entities ) {
             if( left(vec->_global) )
                 l.push_back( vec );
             else
@@ -224,20 +257,20 @@ protected:
     
     template< class Iterator >
     void reput( Iterator it_begin, Iterator it_end ) {
-        _vertices.clear();
-        _vertices.reserve( it_end - it_begin );
+        _entities.clear();
+        _entities.reserve( it_end - it_begin );
         for ( auto p = it_begin; p!= it_end; ++p)
-            _vertices.push_back(*p);
-        _vertices.shrink_to_fit();
+            _entities.push_back(*p);
+        _entities.shrink_to_fit();
         
-        _isEmpty = _vertices.size() <  1;
-        _isLeaf  = _vertices.size() == 1;
+        _isEmpty = _entities.size() <  1;
+        _isLeaf  = _entities.size() == 1;
         // abort the recursion if there is only one vertex left within this node
         if ( _isLeaf || _isEmpty ) return;
             
         _median = _bounding_box.corner(_orientation) + .5*_bounding_box.dimension(_orientation);
         std::vector< VertexContainer* > l,r;
-        for ( auto vec : _vertices ) {
+        for ( auto vec : _entities ) {
             if( left(vec->_global) )
                 l.push_back( vec );
             else
@@ -249,16 +282,16 @@ protected:
     }
     
     void reput( ) {
-        _vertices.shrink_to_fit();
+        _entities.shrink_to_fit();
         
-        _isEmpty = _vertices.size() <  1;
-        _isLeaf  = _vertices.size() == 1;
+        _isEmpty = _entities.size() <  1;
+        _isLeaf  = _entities.size() == 1;
         // abort the recursion if there is only one vertex left within this node
         if ( _isLeaf || _isEmpty ) return;
             
         _median = _bounding_box.corner(_orientation) + .5*_bounding_box.dimension(_orientation);
         std::vector< VertexContainer* > l,r;
-        for ( auto vec : _vertices ) {
+        for ( auto vec : _entities ) {
             if( left(vec->_global) )
                 l.push_back( vec );
             else
@@ -351,7 +384,7 @@ protected:
     }
     
     void updateState( const unsigned lv = 0 ) {
-        _isEmpty = _vertices.size() < 1;
+        _isEmpty = _entities.size() < 1;
         _isLeaf  = ((_child[0] == NULL) && (_child[1] == NULL));
         _level   = lv;
         
@@ -508,32 +541,15 @@ public:
         DepthFirstResult( const DepthFirstResult& r ) : es(r.es), xl(r.xl), found(r.found) {}
     };
 
-    struct EntityContainer {
-        EntitySeed                      _seed;
-        std::vector<unsigned>           _neighbour_seeds;
-        geometry::BoundingBox<Real,dim> _bb;
-        LinaVector                      _global;
-        unsigned                        _id;
-
-        EntityContainer( const EntitySeed& seed ) : _seed(seed), _bb(), _global(0.), _id(0) {}
-        
-        void remove_duplicates() {
-            // remove duplicate entities
-            std::sort( _neighbour_seeds.begin(), _neighbour_seeds.end());
-            auto lastE = std::unique(_neighbour_seeds.begin(), _neighbour_seeds.end());
-            _neighbour_seeds.erase(lastE, _neighbour_seeds.end());
-        }
-    };
-
-    const Node*             child (const unsigned i)    const { return _child[i]; }
-    const VertexContainer*  vertex(const unsigned i)    const { return _vertices[i]; }
-    const unsigned          vertex_size()               const { return _vertices.size(); }
-    const bool              isLeaf()                    const { return _isLeaf;     }
-    const bool              isEmpty()                   const { return _isEmpty;    }
+    const Node*             child (const unsigned i)    const { return _child[i];    }
+    const EntityContainer*  entity(const unsigned i)    const { return _entities[i]; }
+    const unsigned          entity_size()               const { return _entities.size(); }
+    const bool              isLeaf()                    const { return _isLeaf;      }
+    const bool              isEmpty()                   const { return _isEmpty;     }
     const bool              balanced()                  const { return _balanced;    }
-    const unsigned          level()                     const { return _level;      }
-    const unsigned          orientation()               const { return _orientation;}
-    const LinaVector        normal()                    const { return _normal;     }
+    const unsigned          level()                     const { return _level;       }
+    const unsigned          orientation()               const { return _orientation; }
+    const LinaVector        normal()                    const { return _normal;      }
     
 //=======================================================================================================
 // public methods
@@ -566,7 +582,7 @@ public:
         ts.maxLevel = std::max( ts.maxLevel , _level );
         ts.aveLevel += static_cast<Real>(_level);
 
-        const unsigned vs = _vertices.size();
+        const unsigned vs = _entities.size();
         ts.minVertices  = std::min( ts.minVertices , vs );
         ts.maxVertices  = std::max( ts.maxVertices , vs );
         ts.aveVertices += static_cast<Real>( vs );
@@ -587,7 +603,7 @@ public:
 
             if ( vs > 0 ) {
 //                 assert( vs == 1 );
-                const unsigned    vss  = _vertices[0]->_entity_seeds.size();
+                const unsigned    vss  = _entities[0]->_neighbour_seeds.size();
                 ts.minEntitiesPerLeaf  = std::min( ts.minEntitiesPerLeaf , vss );
                 ts.maxEntitiesPerLeaf  = std::max( ts.maxEntitiesPerLeaf , vss );
                 ts.aveEntitiesPerLeaf += static_cast<Real>( vss );
@@ -607,17 +623,17 @@ public:
         return _child[1]->searchDown(x);
     }
 
-    const DepthFirstResult  searchUp( const FieldVector& xg, const std::vector<EntityContainer*>& _entities, const Node* caller = NULL ) const {
-        const auto res = searchDown( xg, _entities, caller );
+    const DepthFirstResult  searchUp( const FieldVector& xg, const std::vector<EntityContainer*>& entities, const Node* caller = NULL ) const {
+        const auto res = searchDown( xg, entities, caller );
         if ( res.found ) return res;
 
         if ( _parent != NULL )
-            return _parent->searchUp( xg, _entities, this );
+            return _parent->searchUp( xg, entities, this );
 
         return DepthFirstResult( );
     }
 
-    const DepthFirstResult  searchDown( const FieldVector& xg, const std::vector<EntityContainer*>& _entities, const Node* caller = NULL ) const {
+    const DepthFirstResult  searchDown( const FieldVector& xg, const std::vector<EntityContainer*>& entities, const Node* caller = NULL ) const {
         if ( _isEmpty ) return DepthFirstResult( );
 
         if ( _isLeaf  ) {
@@ -625,9 +641,9 @@ public:
             for ( unsigned k = 0; k < dim; k++)
                 x(k) = xg[k];
 
-            for ( auto es = vertex(0)->_entity_seeds.begin(); es != vertex(0)->_entity_seeds.end(); ++es ) {
-                if ( !_entities[*es]->_bb.inside(x) ) continue;
-                const EntityPointer ep( _grid.entityPointer( _entities[*es]->_seed ) );
+            for ( auto es = entity(0)->_neighbour_seeds.begin(); es != entity(0)->_neighbour_seeds.end(); ++es ) {
+                if ( !entities[*es]->_bb.inside(x) ) continue;
+                const EntityPointer ep( _grid.entityPointer( entities[*es]->_seed ) );
                 const Entity&   e   = *ep;
                 const auto&     geo = e.geometry();
                 const auto&     gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
@@ -639,11 +655,11 @@ public:
 
         } else {
             if ( (caller != _child[0]) && _child[0] ) {
-                const auto res0 = _child[0]->searchDown( xg, _entities, this );
+                const auto res0 = _child[0]->searchDown( xg, entities, this );
                 if ( res0.found ) return res0;
             }
             if ( (caller != _child[1]) && _child[1] ) {
-                const auto res1 = _child[1]->searchDown( xg, _entities, this );
+                const auto res1 = _child[1]->searchDown( xg, entities, this );
                 if ( res1.found ) return res1;
             }
         }

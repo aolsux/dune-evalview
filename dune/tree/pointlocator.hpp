@@ -62,7 +62,7 @@ protected:
     using Node<GV>::_parent;
     using Node<GV>::_gridView;
     using Node<GV>::_grid;
-    using Node<GV>::_vertices;
+    using Node<GV>::_entities;
     using Node<GV>::_bounding_box;
     using Node<GV>::_balance_factor;
     using Node<GV>::_child;
@@ -92,7 +92,9 @@ protected:
     std::map< unsigned, unsigned > _id2idxEntity;       //!< map from global entity-id to index in _entities
     std::map< unsigned, unsigned > _id2idxVertex;       //!< map from global entity-id to index in _vertices
 
-    std::vector<EntityContainer*>  _entities;           //!< EntityContainer for all codim 0 entities in GridView
+//     std::vector<EntityContainer*>  _entities;           //!< EntityContainer for all codim 0 entities in GridView
+
+    std::vector< VertexContainer* > _vertices;
    
 //=======================================================================================================
 // public data
@@ -139,22 +141,22 @@ public:
 
     //== build tree =====================================================================================
     void build() {
-        std::vector< VertexContainer* > _l_vertices;
+        std::vector< EntityContainer* > _l_entities;
 
         const auto& idSet = _grid.globalIdSet();
 
         // collect cells on leaf view
         for( auto e = _gridView.template begin<0>(); e != _gridView.template end<0>(); ++e ) {
-            _entities.push_back( new EntityContainer(e->seed()) );
-            _entities.back()->_id = idSet.id(*e);
-            _id2idxEntity[idSet.id(*e)] = _entities.size()-1;
+            _l_entities.push_back( new EntityContainer(e->seed()) );
+            _l_entities.back()->_id = idSet.id(*e);
+            _id2idxEntity[idSet.id(*e)] = _l_entities.size()-1;
         }
 
         // collect vertices on leaf view
         for( auto e = _gridView.template begin<dim>(); e != _gridView.template end<dim>(); ++e ) {
-            _l_vertices.push_back( new VertexContainer(e->seed()) );
-            _l_vertices.back()->_id = idSet.id(*e);
-            _id2idxVertex[idSet.id(*e)] = _l_vertices.size()-1;
+            _vertices.push_back( new VertexContainer(e->seed()) );
+            _vertices.back()->_id = idSet.id(*e);
+            _id2idxVertex[idSet.id(*e)] = _vertices.size()-1;
         }
 
         // fill container of all entity seeds
@@ -163,18 +165,21 @@ public:
             const auto&    geo = e->geometry();
             const auto&    gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
 
-            const unsigned v_size = (unsigned)gre.size(dim);
-
+            const unsigned v_size   = (unsigned)gre.size(dim);
+            const Real     N        = 1./(Real)v_size;
+            _l_entities[idx]->_global = 0.;
+            
             for ( unsigned k = 0; k < v_size; k++ ) {
                 const auto& pc = e->template subEntity<dim>(k);
                 const auto& c  = *pc;
                 typename Traits::LinaVector gl = fem::asShortVector<Real, dim>( geo.global( gre.position(k,dim) ) ) ;
 
-                VertexContainer* _v = _l_vertices[ _id2idxVertex[ idSet.id(c) ] ];
+                VertexContainer* _v = _vertices[ _id2idxVertex[ idSet.id(c) ] ];
 
                 // store global coordinates of all vertices
                 _bounding_box.include(gl);
-                _entities[idx]->_bb.include(gl);
+                _l_entities[idx]->_bb.include(gl);
+                _l_entities[idx]->_global += N*gl;
                 _v->_global = gl;
                 _v->_entity_seeds.push_back( idx );
             }
@@ -190,17 +195,18 @@ public:
             for ( unsigned k = 0; k < v_size; k++ ) {
                 const auto& pc = e->template subEntity<dim>(k);
                 const auto& c  = *pc;
-                VertexContainer* _v = _l_vertices[ _id2idxVertex[ idSet.id(c) ] ];
+                VertexContainer* _v = _vertices[ _id2idxVertex[ idSet.id(c) ] ];
 
-                _entities[idx]->_neighbour_seeds.reserve( _entities[idx]->_neighbour_seeds.size() + _v->_entity_seeds.size() );
-                std::copy( _v->_entity_seeds.begin(), _v->_entity_seeds.end(), _entities[idx]->_neighbour_seeds.end() );
+                _l_entities[idx]->_neighbour_seeds.reserve( _l_entities[idx]->_neighbour_seeds.size() + _v->_entity_seeds.size() );
+                for ( auto vk = _v->_entity_seeds.begin(); vk != _v->_entity_seeds.end(); ++vk )
+                    _l_entities[idx]->_neighbour_seeds.push_back(*vk);
             }
             
-            _entities[idx]->remove_duplicates();
+            _l_entities[idx]->remove_duplicates();
         }
 
         // generate list of vertices
-        this->put( _l_vertices.begin(), _l_vertices.end() );
+        this->put( _l_entities.begin(), _l_entities.end() );
         optimize();
 //         this->balance();
 //         this->reput();
