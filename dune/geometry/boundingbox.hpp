@@ -90,6 +90,8 @@ public:
         }
 
         center = corner + .5*dimension;
+        
+        _empty = false;
     }
 
     const BoundingBox<T, dim> split( const unsigned orientation, const T ratio, const bool left ) const {

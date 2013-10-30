@@ -82,19 +82,13 @@ void random_refine(Grid& grid, double fraction = 0.25)
 
 // the new search algorithm
 template< class GridView >
-void locate_kdtree( const GridView& gridview, const std::vector<Dune::FieldVector<typename GridView::ctype, GridView::dimension> >&  coordinates, unsigned loops )
+void locate_kdtree( tree::PointLocator< GridView >& locator, const GridView& gridview, const std::vector<Dune::FieldVector<typename GridView::ctype, GridView::dimension> >&  coordinates, unsigned loops )
 {
     typedef typename  GridView::Grid        GridType;
     static constexpr  unsigned              dim  = GridType::dimension;
     static constexpr  unsigned              dimw = GridType::dimensionworld;
     typedef typename  GridView::ctype       Real;
-    
-   std::cout << CE_STATUS <<  "building k-d-Tree ..."<< CE_RESET <<  std::endl;
-//    ProfilerStart("treebuild.prof");
-   tree::PointLocator< GridView > locator(gridview,false);
-//    ProfilerStop();
-   std::cout << CE_STATUS <<  "k-d-Tree statistics"<< CE_RESET <<  std::endl;
-   locator.printTreeStats( std::cout );
+
   
    for (unsigned u = 0; u < loops; u++)
       for(const auto& x : coordinates)
@@ -139,7 +133,7 @@ void benchmark(const Grid& grid) {
     typedef Dune::FieldVector<Real, dimw>   FieldVector;
     
     const unsigned nV = 100;
-    const unsigned nL = 2000;
+    const unsigned nL = 200;
 
     // create a list of random coordinates in the unitcube
     std::vector<FieldVector> fv; fv.reserve(nV);
@@ -147,9 +141,18 @@ void benchmark(const Grid& grid) {
     
     // search for the entities containing the coordinates
     Timer t;
+    
+        
+   std::cout << CE_STATUS <<  "building k-d-Tree ..."<< CE_RESET <<  std::endl;
+//    ProfilerStart("treebuild.prof");
+   tree::PointLocator< GridView > locator(grid.leafView(),false);
+//    ProfilerStop();
+   std::cout << CE_STATUS <<  "k-d-Tree statistics"<< CE_RESET <<  std::endl;
+   locator.printTreeStats( std::cout );
+    
     t.tic();
     std::cout << CE_STATUS << "kd-tree " << CE_RESET;
-    locate_kdtree(grid.leafView(), fv, nL);
+    locate_kdtree( locator, grid.leafView(), fv, nL);
     const Real ta = t.toc();
     std::cout << ta << std::endl;
     
