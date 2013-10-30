@@ -243,6 +243,7 @@ public:
         typename Node<GridView>::TreeStats ts;
         fillTreeStats(ts);
         ts.operator<<(out) << std::endl;
+        std::cout << _bounding_box << std::endl;
     }
 };
 

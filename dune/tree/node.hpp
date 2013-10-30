@@ -186,11 +186,11 @@ protected:
     }
     
     //== build tree =====================================================================================
-    bool left (const LinaVector& p) const { return p(_orientation) < _median; }
-    bool right(const LinaVector& p) const { return !left( p ); }
+    inline const bool left (const LinaVector& p) const { return p(_orientation) < _median; }
+    inline const bool right(const LinaVector& p) const { return !left( p ); }
     
-    bool left (const LinaVector& p, const unsigned ori ) const { return p(ori) < _median; }
-    bool right(const LinaVector& p, const unsigned ori ) const { return !left( p, ori ); }
+    inline const bool left (const LinaVector& p, const unsigned ori ) const { return p(ori) < _median; }
+    inline const bool right(const LinaVector& p, const unsigned ori ) const { return !left( p, ori ); }
 
     // vid contain indices of all vertices that reside in the space defined by boundingbox
     // p array of global space coordinates corresponding to the indices stored int vid
