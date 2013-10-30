@@ -201,7 +201,7 @@ public:
     }
     
     //== search / iterate tree ==========================================================================
-    const EntityData findEntityPointer( const LinaVector& x ) const {
+    const EntityPointer findEntityPointer( const LinaVector& x ) const {
 //         std::cout << x << std::endl;
         
         // find node containing all possible cells

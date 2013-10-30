@@ -83,41 +83,41 @@ void random_refine(Grid& grid, double fraction = 0.25)
 
 // the new search algorithm
 template< class GridView >
-void locate_kdtree( tree::PointLocator< GridView >& locator, const GridView& gridview, const std::vector<Dune::FieldVector<typename GridView::ctype, GridView::dimension> >&  coordinates, unsigned loops )
+unsigned locate_kdtree( tree::PointLocator< GridView >& locator, const GridView& gridview, const std::vector<Dune::FieldVector<typename GridView::ctype, GridView::dimension> >&  coordinates, unsigned loops )
 {
     typedef typename GridView::Grid::template Codim<0>::EntityPointer EntityPointer;
+    typedef typename GridView::Grid::template Codim<0>::Entity        Entity;
     typedef typename  GridView::Grid        GridType;
     static constexpr  unsigned              dim  = GridType::dimension;
     static constexpr  unsigned              dimw = GridType::dimensionworld;
     typedef typename  GridView::ctype       Real;
     
-    EntityPointer info( gridview.grid().entityPointer( gridview.template begin<0>() ));
+    unsigned res;
+    
     for (unsigned u = 0; u < loops; u++)
-      for(const auto& x : coordinates) {
-            info = locator.findEntityPointer( fem::asShortVector<Real, dimw>( x ) );
-      }
+        for(const auto& x : coordinates) {
+            const EntityPointer  ep = locator.findEntityPointer( fem::asShortVector<Real, dimw>( x ) );
+            const Entity&        e  = *ep;
+            res += static_cast<unsigned>(ep);
+    }
    
+   return res;
 }
 
 
 // the old search algorithm doing lots of coordinate transformations
 template < class GridView >
-void locate_hierarchic(Dune::HierarchicSearch< typename GridView::Grid, typename GridView::IndexSet >& locator, 
+unsigned locate_hierarchic(Dune::HierarchicSearch< typename GridView::Grid, typename GridView::IndexSet >& locator, 
                        const GridView& gridview, const std::vector<Dune::FieldVector<typename GridView::ctype, GridView::dimension> >&  coordinates, unsigned loops )
 {
     typedef typename GridView::Grid::template Codim<0>::EntityPointer EntityPointer;
+    typedef typename GridView::Grid::template Codim<0>::Entity        Entity;
     
-    EntityPointer info( gridview.grid().entityPointer( gridview.template begin<0>() ));
     for (unsigned u = 0; u < loops; u++)
-        for(const auto& x : coordinates)
-//          try
-//          {
-              info = locator.findEntity( x );
-//          }
-//          catch (GridError& e)
-//          {
-            // the coordinate is not within the grid
-//          }
+        for(const auto& x : coordinates) {
+            const EntityPointer  ep = locator.findEntity( x );
+            const Entity&        e   = *ep;
+        }
 }
 
 
