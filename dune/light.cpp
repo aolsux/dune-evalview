@@ -44,6 +44,7 @@
 
 #include <utils/utils.hpp>
 #include <fem/helper.hpp>
+#include <dune/grid/io/file/dgfparser/dgfgridfactory.hh>
 
 
 // #include <gperftools/profiler.h>
@@ -84,21 +85,16 @@ void random_refine(Grid& grid, double fraction = 0.25)
 template< class GridView >
 void locate_kdtree( tree::PointLocator< GridView >& locator, const GridView& gridview, const std::vector<Dune::FieldVector<typename GridView::ctype, GridView::dimension> >&  coordinates, unsigned loops )
 {
+    typedef typename GridView::Grid::template Codim<0>::EntityPointer EntityPointer;
     typedef typename  GridView::Grid        GridType;
     static constexpr  unsigned              dim  = GridType::dimension;
     static constexpr  unsigned              dimw = GridType::dimensionworld;
     typedef typename  GridView::ctype       Real;
-
+    
+    EntityPointer info( gridview.grid().entityPointer( gridview.template begin<0>() ));
     for (unsigned u = 0; u < loops; u++)
       for(const auto& x : coordinates) {
-//          try
-//          {
-            auto info = locator.findEntity( fem::asShortVector<Real, dimw>( x ) );
-//          }
-//          catch (GridError& e)
-//          {
-            // the coordinate is not within the grid
-//          }
+            info = locator.findEntityPointer( fem::asShortVector<Real, dimw>( x ) );
       }
    
 }
@@ -106,15 +102,17 @@ void locate_kdtree( tree::PointLocator< GridView >& locator, const GridView& gri
 
 // the old search algorithm doing lots of coordinate transformations
 template < class GridView >
-void locate_hierarchic(const GridView& gridview, const std::vector<Dune::FieldVector<typename GridView::ctype, GridView::dimension> >&  coordinates, unsigned loops )
+void locate_hierarchic(Dune::HierarchicSearch< typename GridView::Grid, typename GridView::IndexSet >& locator, 
+                       const GridView& gridview, const std::vector<Dune::FieldVector<typename GridView::ctype, GridView::dimension> >&  coordinates, unsigned loops )
 {
+    typedef typename GridView::Grid::template Codim<0>::EntityPointer EntityPointer;
     
-    Dune::HierarchicSearch< typename GridView::Grid, typename GridView::IndexSet > locator( gridview.grid(), gridview.grid().leafIndexSet() );
+    EntityPointer info( gridview.grid().entityPointer( gridview.template begin<0>() ));
     for (unsigned u = 0; u < loops; u++)
         for(const auto& x : coordinates)
 //          try
 //          {
-              auto info = locator.findEntity( x );
+              info = locator.findEntity( x );
 //          }
 //          catch (GridError& e)
 //          {
@@ -142,24 +140,25 @@ void benchmark(const Grid& grid) {
     // search for the entities containing the coordinates
     Timer t;
     
-        
-   std::cout << CE_STATUS <<  "building k-d-Tree ..."<< CE_RESET <<  std::endl;
-//    ProfilerStart("treebuild.prof");
-   tree::PointLocator< GridView > locator(grid.leafView(),false);
-//    ProfilerStop();
-   std::cout << CE_STATUS <<  "k-d-Tree statistics"<< CE_RESET <<  std::endl;
-   locator.printTreeStats( std::cout );
+    Dune::HierarchicSearch< typename GridView::Grid, typename GridView::IndexSet > hr_locator( grid, grid.leafIndexSet() );
+            
+    std::cout << CE_STATUS <<  "building k-d-Tree ..."<< CE_RESET <<  std::endl;
+    //    ProfilerStart("treebuild.prof");
+    tree::PointLocator< GridView > kd_locator(grid.leafView(),false);
+    //    ProfilerStop();
+    std::cout << CE_STATUS <<  "k-d-Tree statistics"<< CE_RESET <<  std::endl;
+    kd_locator.printTreeStats( std::cout );
     
     t.tic();
     std::cout << CE_STATUS << "kd-tree " << CE_RESET;
-    locate_kdtree( locator, grid.leafView(), fv, nL);
+    locate_kdtree( kd_locator, grid.leafView(), fv, nL);
     const Real ta = t.toc();
     std::cout << ta << std::endl;
     
     // search for the entities containing the coordinates
     std::cout << CE_STATUS << "hr-tree " << CE_RESET;
     t.tic();
-    locate_hierarchic(grid.leafView(), fv, nL);
+    locate_hierarchic(hr_locator, grid.leafView(), fv, nL);
     const Real tb = t.toc();
     std::cout << ta << std::endl;
     std::cout << CE_STATUS << "SPEED-UP  " << CE_RESET << tb/ta << "x" << std::endl;
