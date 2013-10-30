@@ -39,7 +39,6 @@
 #include <utils/utils.hpp>
 #include <geometry/boundingbox.hpp>
 #include <assert.h>
-#include <fem/dune.h>
 
 namespace tree {
 
@@ -618,7 +617,7 @@ public:
                 x(k) = xg[k];
 
             for ( auto es = vertex(0)->_entity_seeds.begin(); es != vertex(0)->_entity_seeds.end(); ++es ) {
-                if ( !_entities[*es]->_bb.checkInside(x) ) continue;
+                if ( !_entities[*es]->_bb.inside(x) ) continue;
                 const EntityPointer ep( _grid.entityPointer( _entities[*es]->_seed ) );
                 const Entity&   e   = *ep;
                 const auto&     geo = e.geometry();

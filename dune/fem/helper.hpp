@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <fem/dune.h>
+#include <dune/common/fvector.hh>
 #include <math/shortvector.hpp>
 
 

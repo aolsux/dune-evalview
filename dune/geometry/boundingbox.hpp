@@ -31,6 +31,7 @@
 /*! \file */
 #pragma once
 
+#include <iostream>
 #include <cmath>
 #include <limits>
 #include <math/helper.hpp>
@@ -62,14 +63,14 @@ public:
 
     BoundingBox( const BoundingBox< T, dim >& bb ) : _empty(bb._empty), dimension(bb.dimension), corner(bb.corner), center(bb.center) {}
 
-    const bool isInside( const math::ShortVector< T, dim >& p ) const {
+    const bool inside( const math::ShortVector< T, dim >& p ) const {
         const math::ShortVector< T, dim > aux = p - corner;
         for ( unsigned k = 0; k < dim; k++ )
             if ( aux(k) > dimension(k) ) return false;
         return true;
     }
 
-    void append( const math::ShortVector< T, dim >& p ) {
+    void include( const math::ShortVector< T, dim >& p ) {
         if ( _empty ) {
             _empty      = false;
             corner      = p;
@@ -114,6 +115,11 @@ public:
         out << "center          " << center             << std::endl;
 
         return out;
+    }
+    
+    friend std::ostream& operator<<(std::ostream& os, const BoundingBox& bb)
+    {
+       return os << bb;
     }
 };
 

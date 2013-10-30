@@ -14,8 +14,9 @@ include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../contrib/include
 
 
 include_directories(${Boost_INCLUDE_DIRS})
-include_directories(${DUNE_INCLUDE_DIRS})
 include_directories(${ALUGRID_INCLUDE_DIRS})
+include_directories(${ALUGRID_INCLUDE_DIRS}/serial)
+include_directories(${DUNE_INCLUDE_DIRS})
 #include_directories(${METIS_INCLUDE_DIRS})
 include_directories(${MPI_INCLUDE_PATH})
 #include_directories(${GOOGLE_PERFTOOLS_INCLUDE_DIR})

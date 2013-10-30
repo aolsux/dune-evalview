@@ -32,11 +32,12 @@
 
 #define ENABLE_ALUGRID 1
 
-#include <dune/config.h>
+#include <dune/grid-config.h>
 #include <dune/common/fvector.hh>
 
 #include <dune/grid/alugrid.hh>
 #include <dune/grid/utility/structuredgridfactory.hh>
+#include <dune/grid/utility/hierarchicsearch.hh>
 #include <tree/pointlocator.hpp>
 
 #include <random>
