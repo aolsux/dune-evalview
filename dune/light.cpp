@@ -93,13 +93,13 @@ unsigned locate( tree::PointLocator< GridView >& locator, const GridView& gridvi
     static constexpr  unsigned              dimw = GridType::dimensionworld;
     typedef typename  GridView::ctype       Real;
 
-    unsigned res = 0;
-    
+    auto& gids = gridview.grid().globalIdSet();
+    unsigned res = 0;    
     for (unsigned u = 0; u < loops; u++)
         for(const auto& x : coordinates) {
             const EntityPointer  ep = locator.findEntityPointer( fem::asShortVector<Real, dimw>( x ) );
             const Entity&        e  = *ep;
-            res += (unsigned)((void*)(&ep));
+            res += gids.id(e);
     }
    
    return res;
@@ -114,12 +114,13 @@ unsigned locate_hierarchic(Dune::HierarchicSearch< typename GridView::Grid, type
     typedef typename GridView::Grid::template Codim<0>::EntityPointer EntityPointer;
     typedef typename GridView::Grid::template Codim<0>::Entity        Entity;
     
+    auto& gids = gridview.grid().globalIdSet();    
     unsigned res = 0;
     for (unsigned u = 0; u < loops; u++)
         for(const auto& x : coordinates) {
             const EntityPointer  ep = locator.findEntity( x );
             const Entity&        e  = *ep;
-            res += (unsigned)((void*)(&ep));
+            res += gids.id(e);
         }
         
     return res;
@@ -153,7 +154,7 @@ void benchmark(const Grid& grid) {
     
     t.tic();
     std::cout << CE_STATUS << "kd-tree " << CE_RESET;
-    locate( kd_locator, grid.leafView(), fv, nL);
+    std::cout << locate( kd_locator, grid.leafView(), fv, nL) <<  std::endl;
     const Real ta = t.toc();
     std::cout << ta << std::endl;
     

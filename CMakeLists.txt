@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 2.8)
 
 set(CMAKE_BUILD_TYPE "Release" )
 
-set(DEFINES "-Wfatal-errors -Wno-unknown-pragmas -Wno-deprecated-declarations -fpermissive")
+set(DEFINES "-Wfatal-errors -Wno-unknown-pragmas -Wno-deprecated-declarations")
 
 set(CMAKE_C_FLAGS_RELWITHDEBINFO "${DEFINES} -march=native -fopenmp -std=c++11 -g2 -O2 -Wall -Wno-long-long -pipe -fPIC -pedantic")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${DEFINES} -march=native -fopenmp -std=c++11 -g2 -O2 -Wall -Wno-long-long -pipe -fPIC -pedantic")
