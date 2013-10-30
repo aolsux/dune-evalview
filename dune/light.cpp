@@ -83,8 +83,8 @@ void random_refine(Grid& grid, double fraction = 0.25)
 
 
 // the new search algorithm
-template< class GridView >
-unsigned locate( tree::PointLocator< GridView >& locator, const GridView& gridview, const std::vector<Dune::FieldVector<typename GridView::ctype, GridView::dimension> >&  coordinates, unsigned loops )
+template< class GridView , class Locator>
+unsigned locate( const Locator& locator, const GridView& gridview, const std::vector<Dune::FieldVector<typename GridView::ctype, GridView::dimension> >&  coordinates, unsigned loops )
 {
     typedef typename GridView::Grid::template Codim<0>::EntityPointer EntityPointer;
     typedef typename GridView::Grid::template Codim<0>::Entity        Entity;
@@ -97,33 +97,11 @@ unsigned locate( tree::PointLocator< GridView >& locator, const GridView& gridvi
     unsigned res = 0;    
     for (unsigned u = 0; u < loops; u++)
         for(const auto& x : coordinates) {
-            const EntityPointer  ep = locator.findEntityPointer( fem::asShortVector<Real, dimw>( x ) );
-            const Entity&        e  = *ep;
-            res += gids.id(e);
+            const EntityPointer ep = locator.findEntity( x );
+            res += gids.id(*ep);
     }
    
    return res;
-}
-
-
-// the old search algorithm doing lots of coordinate transformations
-template < class GridView >
-unsigned locate_hierarchic(Dune::HierarchicSearch< typename GridView::Grid, typename GridView::IndexSet >& locator, 
-                       const GridView& gridview, const std::vector<Dune::FieldVector<typename GridView::ctype, GridView::dimension> >&  coordinates, unsigned loops )
-{
-    typedef typename GridView::Grid::template Codim<0>::EntityPointer EntityPointer;
-    typedef typename GridView::Grid::template Codim<0>::Entity        Entity;
-    
-    auto& gids = gridview.grid().globalIdSet();    
-    unsigned res = 0;
-    for (unsigned u = 0; u < loops; u++)
-        for(const auto& x : coordinates) {
-            const EntityPointer  ep = locator.findEntity( x );
-            const Entity&        e  = *ep;
-            res += gids.id(e);
-        }
-        
-    return res;
 }
 
 // compare dune hierarchic search with new kd-tree search
@@ -139,7 +117,7 @@ void benchmark(const Grid& grid) {
     const unsigned nL = 2000;
 
     // create a list of random coordinates in the unitcube
-    std::vector<FieldVector> fv; fv.reserve(nV);
+    std::vector<FieldVector> fv(nV);
     for ( auto& v : fv) randomize<Real, dimw>(v);
     
     // search for the entities containing the coordinates
@@ -162,7 +140,7 @@ void benchmark(const Grid& grid) {
     Dune::HierarchicSearch< typename GridView::Grid, typename GridView::IndexSet > hr_locator( grid,grid.leafIndexSet() );
     std::cout << CE_STATUS << "hr-tree " << CE_RESET;
     t.tic();
-//     locate(hr_locator, grid.leafView(), fv, nL);
+    std::cout << locate(hr_locator, grid.leafView(), fv, nL) << std::endl;
     const Real tb = t.toc();
     std::cout << ta << std::endl;
     std::cout << CE_STATUS << "SPEED-UP  " << CE_RESET << tb/ta << "x" << std::endl;

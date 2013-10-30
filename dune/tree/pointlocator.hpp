@@ -201,7 +201,7 @@ public:
     }
     
     //== search / iterate tree ==========================================================================
-    const EntityPointer findEntityPointer( const LinaVector& x ) const {
+    const EntityPointer findEntity( const LinaVector& x ) const {
 //         std::cout << x << std::endl;
         
         // find node containing all possible cells
@@ -218,7 +218,13 @@ public:
         throw GridError( "Global coordinates are outside the grid!", __ERROR_INFO__ );
     }
     
-    const EntityData findEntity( const LinaVector& x ) const {
+    const EntityPointer findEntity( const FieldVector& x) const
+    {
+       return findEntity( fem::asShortVector<Real, dimw>( x ) );
+    }
+    
+    
+    const EntityData findEntityData( const LinaVector& x ) const {
 //         std::cout << x << std::endl;
         
         // find node containing all possible cells
@@ -237,10 +243,6 @@ public:
         throw GridError( "Global coordinates are outside the grid!", __ERROR_INFO__ );
     }
     
-    const EntityData findEntity( const FieldVector& x) 
-    {
-       return findEntity( fem::asShortVector<Real, dimw>( x ) );
-    }
     
     //! iterate over all leafs of the node
     const LeafView<GridView>  leafView() const {
