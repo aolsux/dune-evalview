@@ -194,9 +194,9 @@ public:
     }
 
     void optimize() {
-            this->update();
-            this->deleteEmpty();
-            this->removeSingles();
+        this->update();
+        this->deleteEmpty();
+        this->removeSingles();
         this->update();
     }
     

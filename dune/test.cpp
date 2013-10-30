@@ -35,6 +35,13 @@
 #include <gperftools/profiler.h>
 
 
+#include <vtkSmartPointer.h>
+#include <vtkPolyData.h>
+#include <vtkPoints.h>
+#include <vtkLine.h>
+#include <vtkCellArray.h>
+#include <vtkXMLPolyDataWriter.h>
+
 
 class FemLocalOperator :
     public Dune::PDELab::NumericalJacobianApplyVolume< FemLocalOperator >,
@@ -626,13 +633,13 @@ public:
     }
 
     typename FemLocalEvalOperator< SetupTraits >::Result rhs ( math::ShortVector<typename SetupTraits::Coord, SetupTraits::dimw>& x, const FieldU field ) {
-        auto e = root.findEntity( x );
+        auto e = root.findEntityData( x );
         const auto res = fleo.eval( e.pointer, e.xl, field );
         return res;
     }
 
     typename FemLocalEvalOperator< SetupTraits >::Result rhs ( Dune::FieldVector<typename SetupTraits::Coord, SetupTraits::dimw>& x, const FieldU field ) {
-        auto e = root.findEntity( asShortVector( x) );
+        auto e = root.findEntityData( asShortVector( x) );
         const auto res = fleo.eval( e.pointer, e.xl, field );
         return res;
     }
