@@ -216,6 +216,11 @@ public:
         throw GridError( "Global coordinates are outside the grid!", __ERROR_INFO__ );
     }
     
+    const EntityData findEntity( const FieldVector& x) 
+    {
+       return findEntity( fem::asShortVector<Real, dimw>( x ) );
+    }
+    
     //! iterate over all leafs of the node
     const LeafView<GridView>  leafView() const {
         return LeafView<GridView>( *this );

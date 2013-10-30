@@ -81,8 +81,8 @@ void random_refine(Grid& grid, double fraction = 0.25)
 
 
 // the new search algorithm
-template< class GridView >
-void locate_kdtree( tree::PointLocator< GridView >& locator, const GridView& gridview, const std::vector<Dune::FieldVector<typename GridView::ctype, GridView::dimension> >&  coordinates, unsigned loops )
+template< class Locator, class GridView >
+void locate( Locator& locator, const GridView& gridview, const std::vector<Dune::FieldVector<typename GridView::ctype, GridView::dimension> >&  coordinates, unsigned loops )
 {
     typedef typename  GridView::Grid        GridType;
     static constexpr  unsigned              dim  = GridType::dimension;
@@ -92,36 +92,11 @@ void locate_kdtree( tree::PointLocator< GridView >& locator, const GridView& gri
   
    for (unsigned u = 0; u < loops; u++)
       for(const auto& x : coordinates)
-//          try
-//          {
-            auto info = locator.findEntity( fem::asShortVector<Real, dimw>( x ) );
-//          }
-//          catch (GridError& e)
-//          {
-            // the coordinate is not within the grid
-//          }
-   
+      {
+            auto info = locator.findEntity( x );
+            std::cout << "found " << x << std::endl;
+      }   
 }
-
-
-// the old search algorithm doing lots of coordinate transformations
-template < class GridView >
-void locate_hierarchic(const GridView& gridview, const std::vector<Dune::FieldVector<typename GridView::ctype, GridView::dimension> >&  coordinates, unsigned loops )
-{
-    
-    Dune::HierarchicSearch< typename GridView::Grid, typename GridView::IndexSet > locator( gridview.grid(), gridview.grid().leafIndexSet() );
-    for (unsigned u = 0; u < loops; u++)
-        for(const auto& x : coordinates)
-//          try
-//          {
-              auto info = locator.findEntity( x );
-//          }
-//          catch (GridError& e)
-//          {
-            // the coordinate is not within the grid
-//          }
-}
-
 
 // compare dune hierarchic search with new kd-tree search
 template < class Grid >
@@ -145,21 +120,22 @@ void benchmark(const Grid& grid) {
         
    std::cout << CE_STATUS <<  "building k-d-Tree ..."<< CE_RESET <<  std::endl;
 //    ProfilerStart("treebuild.prof");
-   tree::PointLocator< GridView > locator(grid.leafView(),false);
+   tree::PointLocator< GridView > kd_locator(grid.leafView(),false);
 //    ProfilerStop();
    std::cout << CE_STATUS <<  "k-d-Tree statistics"<< CE_RESET <<  std::endl;
-   locator.printTreeStats( std::cout );
+   kd_locator.printTreeStats( std::cout );
     
     t.tic();
     std::cout << CE_STATUS << "kd-tree " << CE_RESET;
-    locate_kdtree( locator, grid.leafView(), fv, nL);
+    locate( kd_locator, grid.leafView(), fv, nL);
     const Real ta = t.toc();
     std::cout << ta << std::endl;
     
     // search for the entities containing the coordinates
+    Dune::HierarchicSearch< typename GridView::Grid, typename GridView::IndexSet > h_locator( grid,grid.leafIndexSet() );
     std::cout << CE_STATUS << "hr-tree " << CE_RESET;
     t.tic();
-    locate_hierarchic(grid.leafView(), fv, nL);
+    locate(h_locator, grid.leafView(), fv, nL);
     const Real tb = t.toc();
     std::cout << ta << std::endl;
     std::cout << CE_STATUS << "SPEED-UP  " << CE_RESET << tb/ta << "x" << std::endl;
