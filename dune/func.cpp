@@ -47,67 +47,92 @@
 #include <fem/kdtreegridfunction.hpp>
 #include <dune/grid/geometrygrid/entity.hh>
 #include <dune/grid/io/file/dgfparser/dgfgridfactory.hh>
+#include <dune/pdelab/gridfunctionspace/interpolate.hh>
 
+#include <dune/pdelab/gridfunctionspace/gridfunctionspace.hh>
+#include <dune/pdelab/common/function.hh>
 
-// #include <gperftools/profiler.h>
+#include <test.h>
 
-template<class T, unsigned dim>
-void randomize( Dune::FieldVector<T,dim>& v )
+template< typename GV, typename F>
+struct FuncTraits
 {
-   static std::mt19937 rng;
-   static std::uniform_real_distribution<double> distribution(0.0,1.0);
-    for (unsigned d = 0 ; d < dim ; d++ )
-         v[d] = distribution(rng);
-}
+    enum {dim   = GV::dimension,
+          dimw  = GV::dimensionworld};
+    typedef GV             GridView;
+    typedef typename GridView::ctype                    Real;
 
+    typedef F                                                                              FEM;
 
-template < class Grid >
-void random_refine(Grid& grid, double fraction = 0.25)
+    typedef Dune::PDELab::NoConstraints                                                    Constraints;
+    typedef Dune::PDELab::ISTLVectorBackend<1>                                             VectorBackend;
+    typedef Dune::PDELab::GridFunctionSpace<GridView,FEM,Constraints,VectorBackend >       GridFunctionSpace;
+    typedef Dune::PDELab::ISTLBlockVectorContainer<GridFunctionSpace, Real, 1>             VectorContainer;
+    typedef Dune::PDELab::DiscreteGridFunction<GridFunctionSpace,VectorContainer>          GridFunction;
+    
+    class AnalyticFunction  
+      : public Dune::PDELab::AnalyticGridFunctionBase<Dune::PDELab::AnalyticGridFunctionTraits<GV,double,1>,AnalyticFunction>
+    {
+        public:
+        typedef Dune::PDELab::AnalyticGridFunctionTraits<GV,double,1> Traits;
+        typedef Dune::PDELab::AnalyticGridFunctionBase<Traits,AnalyticFunction> BaseType;
+
+        AnalyticFunction (const GV& gv): BaseType(gv)
+        {}
+
+        inline void evaluateGlobal (const typename Traits::DomainType& x, typename Traits::RangeType& u) const
+        {
+            double abs = x.two_norm();
+            u = std::pow(abs, 3)-std::pow(abs, 2);
+        }
+
+    }; // AnalyticFunction
+
+};
+
+template <typename Traits, typename Grid,  typename Locator, typename FieldVector>
+double interpolate(Traits traits, const Locator& locator, const Grid& grid, const std::vector<FieldVector>& coordinates,  unsigned loops)
 {
-   std::mt19937 rng;
-   // produce random numbers 0 or 1 with prbabilities (1-fraction) and fraction
-   std::discrete_distribution<int> distribution({1-fraction,fraction});
-   auto view = grid.leafView();
-   
-   // prepare the grid for refinement
-   grid.preAdapt();
-   
-   // adapt the grid
-   grid.adapt();
-   for ( auto cell = view.template begin<0>(); cell != view.template end<0>(); ++cell )
-      grid.mark( distribution(rng), *cell );
-   
-   // clean up
-   grid.postAdapt();
-}
-
-
-
-// the new search algorithm
-template< class GridView , class Locator>
-unsigned locate( const Locator& locator, const GridView& gridview, const std::vector<Dune::FieldVector<typename GridView::ctype, GridView::dimension> >&  coordinates, unsigned loops )
-{
-    typedef typename GridView::Grid::template Codim<0>::EntityPointer EntityPointer;
-    typedef typename GridView::Grid::template Codim<0>::Entity        Entity;
-    typedef typename  GridView::Grid        GridType;
-    static constexpr  unsigned              dim  = GridType::dimension;
-    static constexpr  unsigned              dimw = GridType::dimensionworld;
-    typedef typename  GridView::ctype       Real;
-
-    auto& gids = gridview.grid().globalIdSet();
-    unsigned res = 0;    
+    
+    typedef typename Traits::GridView          GridView;
+    typedef typename Traits::GridFunction      GridFunction;
+    typedef typename Traits::AnalyticFunction  AnalyticFunction;
+    typedef typename Traits::VectorBackend     VectorBackend;
+    typedef typename Traits::VectorContainer   VectorContainer;
+    typedef typename Traits::GridFunctionSpace GridFunctionSpace;
+    typedef typename Traits::FEM               FEM;
+    typedef typename Traits::Constraints       Constraints;
+    
+    typedef Dune::PDELab::LocatingGridFunctionToFunctionAdapter<GridFunction, Locator> InterpolatedFunction;
+    
+    FEM               fem;
+    Constraints       ce;
+    GridFunctionSpace gfs(grid.leafView(), fem, ce);
+    VectorContainer   vb(gfs);    
+    GridFunction gridfunction(gfs, vb);
+    
+    AnalyticFunction     analytic(grid.leafView());
+    InterpolatedFunction interpolation(gridfunction, locator);
+    
+    Dune::PDELab::interpolate(analytic,gfs,vb);
+    
+    double error = 0;
+    
     for (unsigned u = 0; u < loops; u++)
-        for(const auto& x : coordinates) {
-            const EntityPointer ep = locator.findEntity( x );
-            res += gids.id(*ep);
-    }
-   
-   return res;
+        for (const auto& v :  coordinates)
+        {
+            Dune::FieldVector<double, 1> iresult,  aresult;
+            interpolation.evaluate(v, iresult);
+            analytic.evaluateGlobal(v,  aresult);
+            error += std::abs((iresult-aresult)/aresult);
+        }    
+    
+    return error;
 }
 
 // compare dune hierarchic search with new kd-tree search
 template < class Grid >
-bool benchmark(const Grid& grid) {  
+void benchmark(const Grid& grid) {  
     static constexpr  unsigned              dim  = Grid::dimension;
     static constexpr  unsigned              dimw = Grid::dimensionworld;
     typedef typename  Grid::LeafGridView    GridView;
@@ -125,29 +150,28 @@ bool benchmark(const Grid& grid) {
     // search for the entities containing the coordinates
     Timer t;
     
+    typedef typename Dune::PDELab::P1LocalFiniteElementMap< Real, Real, dim >                                      FEM;
+    typedef FuncTraits<GridView,  FEM> Traits;
+    
    std::cout << CE_STATUS <<  "building k-d-Tree ..."<< CE_RESET <<  std::endl;
-//    ProfilerStart("treebuild.prof");
    tree::PointLocator< GridView > kd_locator(grid.leafView(),false);
-//    ProfilerStop();
    std::cout << CE_STATUS <<  "k-d-Tree statistics"<< CE_RESET <<  std::endl;
    kd_locator.printTreeStats( std::cout );
     
     t.tic();
     std::cout << CE_STATUS << "kd-tree " << CE_RESET;
-    const unsigned resKD = locate( kd_locator, grid.leafView(), fv, nL);
+    const double resKD = interpolate( Traits(),kd_locator,  grid, fv, nL)/nL/nV;
     const Real ta = t.toc();
-    std::cout << ta << std::endl;
+    std::cout << CE_STATUS << "time: " << ta << "  error: " <<  resKD << CE_RESET <<  std::endl;
     
     // search for the entities containing the coordinates
     Dune::HierarchicSearch< typename GridView::Grid, typename GridView::IndexSet > hr_locator( grid,grid.leafIndexSet() );
     std::cout << CE_STATUS << "hr-tree " << CE_RESET;
     t.tic();
-    const unsigned resHR = locate(hr_locator, grid.leafView(), fv, nL/sp)*sp;
+    const double resHR = interpolate(Traits(), hr_locator, grid, fv, nL/sp)*sp/nL/nV;
     const Real tb = sp*t.toc();
-    std::cout << ta << std::endl;
-    std::cout << CE_STATUS << "SPEED-UP  " << CE_RESET << tb/ta << "x" << std::endl;
-    
-    return resKD == resHR;
+    std::cout << CE_STATUS << "time: " << tb << "  error: " <<  resHR << CE_RESET <<  std::endl;
+    std::cout << CE_STATUS << "SPEED-UP  " << CE_RESET << tb/ta << "x" << CE_RESET  << std::endl;
 }
 
 
@@ -169,17 +193,15 @@ int main ( int argc, char **argv ) {
         Dune::array<unsigned,3> elements;
         elements[0] = elements[1] = elements[2] = 3;
        
-       {
-         // use structured cube grid 
-         typedef Dune::ALUCubeGrid< 3, 3 > Grid;
-         typedef Dune::StructuredGridFactory<Grid> GridFactory;
-         
-         Dune::shared_ptr<Grid> pgrid = GridFactory::createCubeGrid(ll,ur,elements);
-         
-         bool pass = benchmark(*pgrid);
-         
-         if ( !pass ) std::cout <<  CE_WARNING << "kd-locator and hr-locator have different result!" << CE_RESET << std::endl;
-       }
+//        {
+//          // use structured cube grid 
+//          typedef Dune::ALUCubeGrid< 3, 3 > Grid;
+//          typedef Dune::StructuredGridFactory<Grid> GridFactory;
+//          
+//          Dune::shared_ptr<Grid> pgrid = GridFactory::createCubeGrid(ll,ur,elements);
+//          
+//          benchmark(*pgrid);
+//        }
        
        {
          // use structured simplex grid 
@@ -188,9 +210,7 @@ int main ( int argc, char **argv ) {
          
          Dune::shared_ptr<Grid> pgrid = GridFactory::createSimplexGrid(ll,ur,elements);
          
-         bool pass = benchmark(*pgrid);
-         
-         if ( !pass ) std::cout <<  CE_WARNING << "kd-locator and hr-locator have different result!" << CE_RESET << std::endl;
+         benchmark(*pgrid);
        }
       
       

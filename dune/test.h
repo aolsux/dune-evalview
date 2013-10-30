@@ -52,10 +52,12 @@
 
 #include <vector>
 
-#include <vtkCellArray.h>
-#include <vtkSmartPointer.h>
-#include <vtkPolyLine.h>
-#include <vtkXMLPolyDataWriter.h>
-#include <vtkPolyData.h>
-#include <vtkLine.h>
-#include <vtkLineSource.h>
+
+template<class T, unsigned dim>
+void randomize( Dune::FieldVector<T,dim>& v )
+{
+   static std::mt19937 rng;
+   static std::uniform_real_distribution<double> distribution(0.0,1.0);
+    for (unsigned d = 0 ; d < dim ; d++ )
+         v[d] = distribution(rng);
+}

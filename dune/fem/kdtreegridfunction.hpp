@@ -62,15 +62,16 @@ public:
     > Traits;
 
     //! make a GridFunctionToFunctionAdapter
-    LocatingGridFunctionToFunctionAdapter( const Locator& locator_, const GF &gf_) : gf(gf_) , locator(locator_) { }
+    LocatingGridFunctionToFunctionAdapter( const GF &gf_, const Locator& locator_) : gf(gf_) , locator(locator_) { }
 
     /** \brief Evaluate all basis function at given position
 
     Evaluates all shape functions at the given position and returns
     these values in a vector.
      */
-    inline void evaluate (const typename Traits::DomainType& x,
-    typename Traits::RangeType& y) const
+    static_assert(std::is_same<typename Traits::DomainType,  Dune::FieldVector<double, 3> >::value, "domain type mismatch");
+    static_assert(std::is_same<typename Traits::RangeType,  Dune::FieldVector<double, 1> >::value, "range type mismatch");
+    inline void evaluate (const typename Traits::DomainType& x,    typename Traits::RangeType& y) const
     {
         typename GF::Traits::GridViewType::Grid::Traits::template Codim<0>::EntityPointer
         ep = locator.findEntity(x);
