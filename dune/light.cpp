@@ -44,6 +44,7 @@
 
 #include <utils/utils.hpp>
 #include <fem/helper.hpp>
+#include <fem/kdtreegridfunction.hpp>
 #include <dune/grid/geometrygrid/entity.hh>
 #include <dune/grid/io/file/dgfparser/dgfgridfactory.hh>
 
@@ -106,7 +107,7 @@ unsigned locate( const Locator& locator, const GridView& gridview, const std::ve
 
 // compare dune hierarchic search with new kd-tree search
 template < class Grid >
-void benchmark(const Grid& grid) {  
+bool benchmark(const Grid& grid) {  
     static constexpr  unsigned              dim  = Grid::dimension;
     static constexpr  unsigned              dimw = Grid::dimensionworld;
     typedef typename  Grid::LeafGridView    GridView;
@@ -115,6 +116,7 @@ void benchmark(const Grid& grid) {
     
     const unsigned nV = 1000;
     const unsigned nL = 2000;
+    const unsigned sp = 200;
 
     // create a list of random coordinates in the unitcube
     std::vector<FieldVector> fv(nV);
@@ -132,7 +134,7 @@ void benchmark(const Grid& grid) {
     
     t.tic();
     std::cout << CE_STATUS << "kd-tree " << CE_RESET;
-    std::cout << locate( kd_locator, grid.leafView(), fv, nL) <<  std::endl;
+    const unsigned resKD = locate( kd_locator, grid.leafView(), fv, nL);
     const Real ta = t.toc();
     std::cout << ta << std::endl;
     
@@ -140,10 +142,12 @@ void benchmark(const Grid& grid) {
     Dune::HierarchicSearch< typename GridView::Grid, typename GridView::IndexSet > hr_locator( grid,grid.leafIndexSet() );
     std::cout << CE_STATUS << "hr-tree " << CE_RESET;
     t.tic();
-    std::cout << locate(hr_locator, grid.leafView(), fv, nL) << std::endl;
-    const Real tb = t.toc();
+    const unsigned resHR = locate(hr_locator, grid.leafView(), fv, nL/sp)*sp;
+    const Real tb = sp*t.toc();
     std::cout << ta << std::endl;
     std::cout << CE_STATUS << "SPEED-UP  " << CE_RESET << tb/ta << "x" << std::endl;
+    
+    return resKD == resHR;
 }
 
 
@@ -163,7 +167,7 @@ int main ( int argc, char **argv ) {
         ur[0] = ur[1] = ur[2] = 1.;
          
         Dune::array<unsigned,3> elements;
-        elements[0] = elements[1] = elements[2] = 10;
+        elements[0] = elements[1] = elements[2] = 3;
        
        {
          // use structured cube grid 
@@ -172,7 +176,9 @@ int main ( int argc, char **argv ) {
          
          Dune::shared_ptr<Grid> pgrid = GridFactory::createCubeGrid(ll,ur,elements);
          
-         benchmark(*pgrid);
+         bool pass = benchmark(*pgrid);
+         
+         if ( !pass ) std::cout <<  CE_WARNING << "kd-locator and hr-locator have different result!" << CE_RESET << std::endl;
        }
        
        {
@@ -182,7 +188,9 @@ int main ( int argc, char **argv ) {
          
          Dune::shared_ptr<Grid> pgrid = GridFactory::createSimplexGrid(ll,ur,elements);
          
-         benchmark(*pgrid);
+         bool pass = benchmark(*pgrid);
+         
+         if ( !pass ) std::cout <<  CE_WARNING << "kd-locator and hr-locator have different result!" << CE_RESET << std::endl;
        }
       
       
