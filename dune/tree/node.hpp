@@ -133,9 +133,9 @@ protected:
     const GridView&                 _gridView;
     const GridType&                 _grid;
     BoundingBox                     _bounding_box;
-    LinaVector                      _normal;            //!> the normal of the plane that splits this node
-    unsigned                        _orientation;       //!> the dimension that is split by this node
-    unsigned                        _level;             //!> the depth of the node in the tree
+    LinaVector                      _normal;            //!< the normal of the plane that splits this node
+    unsigned                        _orientation;       //!< the dimension that is split by this node
+    unsigned                        _level;             //!< the depth of the node in the tree
     bool                            _isLeaf;
     bool                            _isEmpty;
     bool                            _balanced;

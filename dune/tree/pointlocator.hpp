@@ -86,13 +86,13 @@ protected:
     typedef typename Traits::LinaVector         LinaVector;
     typedef typename Traits::FieldVector        FieldVector;
 
-    static constexpr unsigned dim     = Traits::dim;    //<! grid dimension
-    static constexpr unsigned dimw    = Traits::dimw;   //<! world dimension
+    static constexpr unsigned dim     = Traits::dim;    //!< grid dimension
+    static constexpr unsigned dimw    = Traits::dimw;   //!< world dimension
 
-    std::map< unsigned, unsigned > _id2idxEntity;       //<! map from global entity-id to index in _entities
-    std::map< unsigned, unsigned > _id2idxVertex;       //<! map from global entity-id to index in _vertices
+    std::map< unsigned, unsigned > _id2idxEntity;       //!< map from global entity-id to index in _entities
+    std::map< unsigned, unsigned > _id2idxVertex;       //!< map from global entity-id to index in _vertices
 
-    std::vector<EntityContainer*>  _entities;           //<! EntityContainer for all codim 0 entities in GridView
+    std::vector<EntityContainer*>  _entities;           //!< EntityContainer for all codim 0 entities in GridView
    
 //=======================================================================================================
 // public data

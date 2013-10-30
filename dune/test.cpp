@@ -692,8 +692,9 @@ public:
     void benchmark() {
         Dune::HierarchicSearch< GridType, typename GridType::LeafIndexSet > _hr_locator( grid, grid.leafIndexSet() );
         
-        const unsigned nV = 100;
-        const unsigned nL = 2000;
+        const unsigned nV = 1000;                                // number of random eval points
+        const unsigned nL = 300;                                 // number of repetitions
+        const unsigned sp = 300;                                 // speed-up estimate
         std::cout << CE_STATUS << "Fill random global coord buffer" << CE_RESET << std::endl;
         std::vector< typename Traits::LinaVector  > lv; lv.reserve(nV);
         std::vector< typename Traits::FieldVector > fv; fv.reserve(nV);
@@ -717,10 +718,10 @@ public:
             }
         }
         const Real ta = t.toc();
-        std::cout << ta << std::endl;
+        std::cout << "seconds " << ta << ",  rate " << nV*nL/ta << std::endl;
         std::cout << CE_STATUS << "hr-tree " << CE_RESET;
         t.tic();
-        for ( unsigned l = 0; l < nL/200; l++ ) {
+        for ( unsigned l = 0; l < (unsigned)((double)nL/(double)sp); l++ ) {
             for ( unsigned k = 0; k < nV; k++ ) {
                 typename Traits::EntityPointer ep( _hr_locator.findEntity( fv[k] ) );
                 const auto&     e   = *ep;
@@ -730,8 +731,8 @@ public:
             }
         }
         const Real tb = t.toc();
-        std::cout << 200.*tb << std::endl;
-        std::cout << CE_STATUS << "SPEED-UP  " << CE_RESET << 200.*tb/ta << "x" << std::endl;
+        std::cout << "seconds " << sp*tb << ",  rate " << (double)(nV*nL)/(sp*tb) << std::endl;
+        std::cout << CE_STATUS << "SPEED-UP  " << CE_RESET << sp*tb/ta << "x" << std::endl;
     }
 
 };
