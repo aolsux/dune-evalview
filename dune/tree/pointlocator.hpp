@@ -179,6 +179,25 @@ public:
                 _v->_entity_seeds.push_back( idx );
             }
         }
+        
+        for( auto e = _gridView.template begin<0>(); e != _gridView.template end<0>(); ++e ) {
+            const unsigned idx = _id2idxEntity[ idSet.id(*e) ];
+            const auto&    geo = e->geometry();
+            const auto&    gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
+
+            const unsigned v_size = (unsigned)gre.size(dim);
+
+            for ( unsigned k = 0; k < v_size; k++ ) {
+                const auto& pc = e->template subEntity<dim>(k);
+                const auto& c  = *pc;
+                VertexContainer* _v = _l_vertices[ _id2idxVertex[ idSet.id(c) ] ];
+
+                _entities[idx]->_neighbour_seeds.reserve( _entities[idx]->_neighbour_seeds.size() + _v->_entity_seeds.size() );
+                std::copy( _v->_entity_seeds.begin(), _v->_entity_seeds.end(), _entities[idx]->_neighbour_seeds.end() );
+            }
+            
+            _entities[idx]->remove_duplicates();
+        }
 
         // generate list of vertices
         this->put( _l_vertices.begin(), _l_vertices.end() );

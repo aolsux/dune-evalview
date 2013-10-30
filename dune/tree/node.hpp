@@ -35,6 +35,7 @@
 #include <limits>
 #include <iostream>
 #include <unordered_map>
+#include <algorithm>
 #include <error/duneerror.hpp>
 #include <utils/utils.hpp>
 #include <geometry/boundingbox.hpp>
@@ -509,11 +510,19 @@ public:
 
     struct EntityContainer {
         EntitySeed                      _seed;
+        std::vector<unsigned>           _neighbour_seeds;
         geometry::BoundingBox<Real,dim> _bb;
         LinaVector                      _global;
         unsigned                        _id;
 
         EntityContainer( const EntitySeed& seed ) : _seed(seed), _bb(), _global(0.), _id(0) {}
+        
+        void remove_duplicates() {
+            // remove duplicate entities
+            std::sort( _neighbour_seeds.begin(), _neighbour_seeds.end());
+            auto lastE = std::unique(_neighbour_seeds.begin(), _neighbour_seeds.end());
+            _neighbour_seeds.erase(lastE, _neighbour_seeds.end());
+        }
     };
 
     const Node*             child (const unsigned i)    const { return _child[i]; }
