@@ -89,9 +89,8 @@ void locate_kdtree( tree::PointLocator< GridView >& locator, const GridView& gri
     static constexpr  unsigned              dimw = GridType::dimensionworld;
     typedef typename  GridView::ctype       Real;
 
-  
-   for (unsigned u = 0; u < loops; u++)
-      for(const auto& x : coordinates)
+    for (unsigned u = 0; u < loops; u++)
+      for(const auto& x : coordinates) {
 //          try
 //          {
             auto info = locator.findEntity( fem::asShortVector<Real, dimw>( x ) );
@@ -100,6 +99,7 @@ void locate_kdtree( tree::PointLocator< GridView >& locator, const GridView& gri
 //          {
             // the coordinate is not within the grid
 //          }
+      }
    
 }
 
@@ -132,8 +132,8 @@ void benchmark(const Grid& grid) {
     typedef typename  GridView::ctype       Real;
     typedef Dune::FieldVector<Real, dimw>   FieldVector;
     
-    const unsigned nV = 100;
-    const unsigned nL = 200;
+    const unsigned nV = 1000;
+    const unsigned nL = 2000;
 
     // create a list of random coordinates in the unitcube
     std::vector<FieldVector> fv; fv.reserve(nV);
