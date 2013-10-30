@@ -44,6 +44,7 @@
 
 #include <utils/utils.hpp>
 #include <fem/helper.hpp>
+#include <dune/grid/io/file/dgfparser/dgfgridfactory.hh>
 
 
 // #include <gperftools/profiler.h>
@@ -84,11 +85,11 @@ void random_refine(Grid& grid, double fraction = 0.25)
 template< class Locator, class GridView >
 void locate( Locator& locator, const GridView& gridview, const std::vector<Dune::FieldVector<typename GridView::ctype, GridView::dimension> >&  coordinates, unsigned loops )
 {
+    typedef typename GridView::Grid::template Codim<0>::EntityPointer EntityPointer;
     typedef typename  GridView::Grid        GridType;
     static constexpr  unsigned              dim  = GridType::dimension;
     static constexpr  unsigned              dimw = GridType::dimensionworld;
     typedef typename  GridView::ctype       Real;
-
   
    for (unsigned u = 0; u < loops; u++)
       for(const auto& x : coordinates)
@@ -107,8 +108,8 @@ void benchmark(const Grid& grid) {
     typedef typename  GridView::ctype       Real;
     typedef Dune::FieldVector<Real, dimw>   FieldVector;
     
-    const unsigned nV = 100;
-    const unsigned nL = 200;
+    const unsigned nV = 1000;
+    const unsigned nL = 2000;
 
     // create a list of random coordinates in the unitcube
     std::vector<FieldVector> fv; fv.reserve(nV);
@@ -117,7 +118,6 @@ void benchmark(const Grid& grid) {
     // search for the entities containing the coordinates
     Timer t;
     
-        
    std::cout << CE_STATUS <<  "building k-d-Tree ..."<< CE_RESET <<  std::endl;
 //    ProfilerStart("treebuild.prof");
    tree::PointLocator< GridView > kd_locator(grid.leafView(),false);

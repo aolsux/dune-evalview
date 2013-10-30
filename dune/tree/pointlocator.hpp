@@ -201,12 +201,33 @@ public:
     }
     
     //== search / iterate tree ==========================================================================
-    const EntityData findEntity( const LinaVector& x )  {
+    const EntityData findEntityPointer( const LinaVector& x ) const {
+//         std::cout << x << std::endl;
+        
         // find node containing all possible cells
         const Node<GridView>* node = searchDown( x );
         const auto fx  = fem::asFieldVector(x);
         const auto res = node->searchUp( fx, _entities, node );
 
+        
+        
+        if ( res.found ) {
+            return  _grid.entityPointer( res.es );
+        }
+
+        throw GridError( "Global coordinates are outside the grid!", __ERROR_INFO__ );
+    }
+    
+    const EntityData findEntity( const LinaVector& x ) const {
+//         std::cout << x << std::endl;
+        
+        // find node containing all possible cells
+        const Node<GridView>* node = searchDown( x );
+        const auto fx  = fem::asFieldVector(x);
+        const auto res = node->searchUp( fx, _entities, node );
+
+        
+        
         if ( res.found ) {
             const auto      ep  = _grid.entityPointer( res.es );
             const Entity&   e   = *ep;
@@ -248,7 +269,6 @@ public:
         typename Node<GridView>::TreeStats ts;
         fillTreeStats(ts);
         ts.operator<<(out) << std::endl;
-        std::cout << _bounding_box << std::endl;
     }
 };
 
