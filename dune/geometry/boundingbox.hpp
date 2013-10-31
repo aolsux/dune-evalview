@@ -45,7 +45,7 @@ private:
     bool _empty;
 
 public:
-    typedef LinaVector LinaVector;
+    typedef math::ShortVector<T, dim> LinaVector;
     
     LinaVector dimension;
     LinaVector corner;
