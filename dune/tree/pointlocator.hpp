@@ -198,8 +198,9 @@ public:
                 VertexContainer* _v = _vertices[ _id2idxVertex[ idSet.id(c) ] ];
 
                 _l_entities[idx]->_neighbour_seeds.reserve( _l_entities[idx]->_neighbour_seeds.size() + _v->_entity_seeds.size() );
-                for ( auto vk = _v->_entity_seeds.begin(); vk != _v->_entity_seeds.end(); ++vk )
+                for ( auto vk = _v->_entity_seeds.begin(); vk != _v->_entity_seeds.end(); ++vk ) {
                     _l_entities[idx]->_neighbour_seeds.push_back(*vk);
+                }
             }
             
             _l_entities[idx]->remove_duplicates();

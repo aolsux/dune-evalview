@@ -641,15 +641,29 @@ public:
             for ( unsigned k = 0; k < dim; k++)
                 x(k) = xg[k];
 
-            for ( auto es = entity(0)->_neighbour_seeds.begin(); es != entity(0)->_neighbour_seeds.end(); ++es ) {
-                if ( !entities[*es]->_bb.inside(x) ) continue;
-                const EntityPointer ep( _grid.entityPointer( entities[*es]->_seed ) );
+            {
+                const EntityPointer ep( _grid.entityPointer( entity(0)->_seed ) );
                 const Entity&   e   = *ep;
                 const auto&     geo = e.geometry();
                 const auto&     gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
                 const auto      xl  = geo.local( xg );
                 if ( gre.checkInside( xl ) ) {
                     return DepthFirstResult( e.seed(), xl );
+                }
+            }                
+                
+                
+            {
+                for ( auto es = entity(0)->_neighbour_seeds.begin(); es != entity(0)->_neighbour_seeds.end(); ++es ) {
+                    if ( !entities[*es]->_bb.inside(x) ) continue;
+                    const EntityPointer ep( _grid.entityPointer( entities[*es]->_seed ) );
+                    const Entity&   e   = *ep;
+                    const auto&     geo = e.geometry();
+                    const auto&     gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
+                    const auto      xl  = geo.local( xg );
+                    if ( gre.checkInside( xl ) ) {
+                        return DepthFirstResult( e.seed(), xl );
+                    }
                 }
             }
 

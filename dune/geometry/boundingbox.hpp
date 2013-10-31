@@ -45,9 +45,11 @@ private:
     bool _empty;
 
 public:
-    math::ShortVector< T, dim > dimension;
-    math::ShortVector< T, dim > corner;
-    math::ShortVector< T, dim > center;
+    typedef LinaVector LinaVector;
+    
+    LinaVector dimension;
+    LinaVector corner;
+    LinaVector center;
 
     BoundingBox() {
         _empty    = true;
@@ -56,21 +58,26 @@ public:
         center    = corner + .5*dimension;
     }
 
-    BoundingBox( const math::ShortVector< T, dim >& c0, const math::ShortVector< T, dim >& d ) :
+    BoundingBox( const LinaVector& c0, const LinaVector& d ) :
         _empty(false), dimension(d), corner(c0), center( center = corner + .5*dimension )
     {
     }
 
     BoundingBox( const BoundingBox< T, dim >& bb ) : _empty(bb._empty), dimension(bb.dimension), corner(bb.corner), center(bb.center) {}
 
-    const bool inside( const math::ShortVector< T, dim >& p ) const {
-        const math::ShortVector< T, dim > aux = p - corner;
+    const bool inside( const LinaVector& p ) const {
+        const LinaVector aux = p - corner;
         for ( unsigned k = 0; k < dim; k++ )
             if ( aux(k) > dimension(k) ) return false;
         return true;
     }
+    
+    const bool overlap( const BoundingBox< T, dim >& bb ) const {
 
-    void include( const math::ShortVector< T, dim >& p ) {
+        return true;
+    }
+    
+    void include( const LinaVector& p ) {
         if ( _empty ) {
             _empty      = false;
             corner      = p;
@@ -79,7 +86,7 @@ public:
             return;
         }
 
-        const math::ShortVector< T, dim > aux = p - corner;
+        const LinaVector aux = p - corner;
         for ( unsigned k = 0; k < dim; k++ ) {
             if ( aux(k) < 0. ) {
                 dimension(k) -= aux(k);
