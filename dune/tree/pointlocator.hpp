@@ -168,6 +168,8 @@ public:
             const unsigned v_size   = (unsigned)gre.size(dim);
             const Real     N        = 1./(Real)v_size;
             _l_entities[idx]->_global = 0.;
+            _l_entities[idx]->_id     = idSet.id(*e);
+            _l_entities[idx]->_idx    = idx;
             
             for ( unsigned k = 0; k < v_size; k++ ) {
                 const auto& pc = e->template subEntity<dim>(k);
@@ -190,8 +192,15 @@ public:
             const auto&    geo = e->geometry();
             const auto&    gre = Dune::GenericReferenceElements< Real, dim >::general(geo.type());
 
+//             for ( auto in = e->ileafbegin(); in!= e->ileafend(); ++in ) {
+//                 if ( in->neighbor() ) {
+//                     const EntityPointer pn  = in->outside();
+//                     const Entity&       n   = *pn;
+//                     _l_entities[idx]->_neighbour_seeds.push_back( _id2idxEntity[ idSet.id(n) ] );
+//                 }
+//             }
+            
             const unsigned v_size = (unsigned)gre.size(dim);
-
             for ( unsigned k = 0; k < v_size; k++ ) {
                 const auto& pc = e->template subEntity<dim>(k);
                 const auto& c  = *pc;
@@ -203,7 +212,7 @@ public:
                 }
             }
             
-            _l_entities[idx]->remove_duplicates();
+            _l_entities[idx]->remove_duplicates( _l_entities );
         }
 
         // generate list of vertices

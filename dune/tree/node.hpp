@@ -39,6 +39,7 @@
 #include <error/duneerror.hpp>
 #include <utils/utils.hpp>
 #include <geometry/boundingbox.hpp>
+#include <fem/helper.hpp>
 #include <assert.h>
 
 namespace tree {
@@ -132,30 +133,45 @@ protected:
         geometry::BoundingBox<Real,dim> _bb;
         LinaVector                      _global;
         unsigned                        _id;
+        unsigned                        _idx;
 
         EntityContainer() :
             _seed           (),
             _neighbour_seeds(),
             _bb             (), 
             _global         (0.),
+            _id             (0), 
             _id             (0)
         {}
         
-        EntityContainer( const EntitySeed& seed ) : _seed(seed), _neighbour_seeds(), _bb(), _global(0.), _id(0) {}
+        EntityContainer( const EntitySeed& seed ) : _seed(seed), _neighbour_seeds(), _bb(), _global(0.), _id(0), _idx(0) {}
         
         EntityContainer( const EntityContainer& ec ) :
             _seed           (ec._seed             ),
             _neighbour_seeds(ec._neighbour_seeds  ),
             _bb             (ec._bb               ), 
             _global         (ec._global           ),
-            _id             (ec._id               )
+            _id             (ec._id               ), 
+            _idx            (ec._idx               )
         {}
         
-        void remove_duplicates() {
+        void remove_duplicates( const std::vector< EntityContainer* >& entities ) {
             // remove duplicate entities
-            std::sort( _neighbour_seeds.begin(), _neighbour_seeds.end());
+            struct Comp {
+                const std::vector< EntityContainer* >& entities;
+                const LinaVector&                      g;
+                const bool operator ()(const unsigned a, const unsigned b) const {
+                    return math::norm2( entities[a]->_global - g ) < math::norm2( entities[b]->_global - g ); 
+                };
+                Comp( const std::vector< EntityContainer* >& entities_, const LinaVector& g_ ) : entities(entities_), g(g_) {}
+            };            
+            Comp comp( entities, _global );
+            
+            std::sort( _neighbour_seeds.begin(), _neighbour_seeds.end(), comp );
             auto lastE = std::unique(_neighbour_seeds.begin(), _neighbour_seeds.end());
             _neighbour_seeds.erase(lastE, _neighbour_seeds.end());
+            for ( auto it = _neighbour_seeds.begin(); it != _neighbour_seeds.end(); ++it )
+                if ( *it == _idx ) { _neighbour_seeds.erase(it); break; }
         }
     };
     
@@ -637,9 +653,7 @@ public:
         if ( _isEmpty ) return DepthFirstResult( );
 
         if ( _isLeaf  ) {
-            LinaVector x;
-            for ( unsigned k = 0; k < dim; k++)
-                x(k) = xg[k];
+            const LinaVector x = fem::asShortVector<Real, dim>(xg);
 
             {
                 const EntityPointer ep( _grid.entityPointer( entity(0)->_seed ) );
