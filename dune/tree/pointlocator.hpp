@@ -218,6 +218,8 @@ public:
         // generate list of vertices
         this->put( _l_entities.begin(), _l_entities.end() );
         optimize();
+        
+        // could clean up vertices ....
 //         this->balance();
 //         this->reput();
 //         optimize();
