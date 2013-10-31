@@ -125,7 +125,7 @@ bool benchmark(const Grid& grid) {
     std::cout << CE_STATUS << "kd-tree " << CE_RESET;
     const unsigned resKD = locate( kd_locator, grid.leafView(), fv, nL);
     const Real ta = t.toc();
-    std::cout << ta << std::endl;
+    std::cout << "seconds " << ta << ",  rate " << (double)(nV*nL)/(ta) << std::endl;
     
     // search for the entities containing the coordinates
     Dune::HierarchicSearch< typename GridView::Grid, typename GridView::IndexSet > hr_locator( grid,grid.leafIndexSet() );
@@ -133,7 +133,7 @@ bool benchmark(const Grid& grid) {
     t.tic();
     const unsigned resHR = locate(hr_locator, grid.leafView(), fv, nL/sp)*sp;
     const Real tb = sp*t.toc();
-    std::cout << ta << std::endl;
+    std::cout << "seconds " << tb << ",  rate " << (double)(nV*nL)/(tb) << std::endl;
     std::cout << CE_STATUS << "SPEED-UP  " << CE_RESET << tb/ta << "x" << std::endl;
     
     return resKD == resHR;
