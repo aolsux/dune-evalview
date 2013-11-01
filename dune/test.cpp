@@ -229,7 +229,6 @@ public:
         // extract some types
         typedef typename LFSU::Traits::FiniteElementType::Traits::LocalBasisType::Traits::DomainFieldType   DF;
         typedef typename LFSU::Traits::FiniteElementType::Traits::LocalBasisType::Traits::RangeFieldType    RF;
-        typedef typename LFSU::Traits::FiniteElementType::Traits::LocalBasisType::Traits::JacobianType      JacobianType;
         typedef typename LFSU::Traits::FiniteElementType::Traits::LocalBasisType::Traits::RangeType         RangeType;
         typedef typename LFSU::Traits::SizeType                                                             size_type;
 
@@ -645,8 +644,6 @@ public:
     }
 
     void integrate ( typename SetupTraits::GridView& gv, const typename SetupTraits::FieldU& v ) {
-        typedef Dune::FieldVector<typename SetupTraits::Coord, SetupTraits::dimw>   Coord;
-        typedef Dune::FieldVector<typename SetupTraits::Coord, 1>                   Scalar;
         typedef typename SetupTraits::Coord                                         Real;
 
         Trajectory< Real, Traits::dimw > traj;
@@ -699,9 +696,9 @@ public:
     void benchmark() {
         Dune::HierarchicSearch< GridType, typename GridType::LeafIndexSet > _hr_locator( grid, grid.leafIndexSet() );
         
-        const unsigned nV = 1000;                                // number of random eval points
-        const unsigned nL = 300;                                 // number of repetitions
-        const unsigned sp = 300;                                 // speed-up estimate
+        const unsigned nV = 10000;                              // number of random eval points
+        const unsigned nL = 60;                                 // number of repetitions
+        const unsigned sp = 30;                                 // speed-up estimate
         std::cout << CE_STATUS << "Fill random global coord buffer" << CE_RESET << std::endl;
         std::vector< typename Traits::LinaVector  > lv; lv.reserve(nV);
         std::vector< typename Traits::FieldVector > fv; fv.reserve(nV);
@@ -716,12 +713,16 @@ public:
             fv.push_back(f);
         }
         
+        auto&       gids = grid.globalIdSet();
+        unsigned    res  = 0; 
+        
         Timer t;
         t.tic();
         std::cout << CE_STATUS << "kd-tree " << CE_RESET;
         for ( unsigned l = 0; l < nL; l++ ) {
             for ( unsigned k = 0; k < nV; k++ ) {
                 auto ed = root.findEntity( lv[k] );
+                res += gids.id(*ed);
             }
         }
         const Real ta = t.toc();
@@ -730,11 +731,8 @@ public:
         t.tic();
         for ( unsigned l = 0; l < (unsigned)((double)nL/(double)sp); l++ ) {
             for ( unsigned k = 0; k < nV; k++ ) {
-                typename Traits::EntityPointer ep( _hr_locator.findEntity( fv[k] ) );
-                const auto&     e   = *ep;
-                const auto&     geo = e.geometry();
-                const auto&     gre = Dune::GenericReferenceElements< Real, Traits::dim >::general(geo.type());
-                const auto      xl  = geo.local( fv[k] );
+                auto ed = _hr_locator.findEntity( fv[k] );
+                res += gids.id(*ed);
             }
         }
         const Real tb = t.toc();
@@ -750,7 +748,7 @@ inline void compute() {
     Dune::FieldVector<typename SetupTraits::Coord, SetupTraits::dimw> lowerLeft (-1. );
     Dune::FieldVector<typename SetupTraits::Coord, SetupTraits::dimw> upperRight( 1. );
     Dune::array<unsigned int, SetupTraits::dim>                        elements;
-    elements.fill(9 - 2*SetupTraits::dim);
+    elements.fill(3);
 
     Dune::shared_ptr< typename SetupTraits::GridType >    pgrid    = SetupTraits::createGrid(lowerLeft, upperRight, elements);
 

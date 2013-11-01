@@ -32,6 +32,10 @@
 
 #pragma once
 
+#define ENABLE_ALBERTA 0
+#define ALBERTA_DIM    2
+#define ENABLE_ALUGRID 1
+
 
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/binary_object.hpp>

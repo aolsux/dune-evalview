@@ -76,11 +76,10 @@ struct ShortVector {
     }
 
     /*!***************************************************************************************
-    * Copy-Contruct.
+    * Copy/Move-Contruct.
     *****************************************************************************************/
-    ShortVector( const ShortVector< T, N >& rhs ) {
-        /*fast_*/memcpy( data, rhs.data, sizeof(T)*N );
-    }
+    ShortVector( const ShortVector< T, N >&  rhs ) = default;
+    ShortVector( ShortVector< T, N >&& rhs ) = default;
 
     /*!***************************************************************************************
     * Contruct from one or N scalars.
@@ -111,7 +110,7 @@ struct ShortVector {
     /*!***************************************************************************************
     * Assign the same scalar right hand side to each component.
     *****************************************************************************************/
-    inline const ShortVector< T, N >& operator = ( const T rhs ) {
+     ShortVector< T, N >& operator = ( const T rhs ) {
         for ( unsigned k = 0; k < N; k++ )
             data[k] = rhs;
         return *this;
@@ -120,10 +119,7 @@ struct ShortVector {
     /*!***************************************************************************************
     * Assign an other ShortVector.
     *****************************************************************************************/
-    inline const ShortVector< T, N >& operator = ( const ShortVector< T, N >& rhs ) {
-        /*fast_*/memcpy( data, rhs.data, sizeof(T)*N );
-        return *this;
-    }
+    ShortVector< T, N >& operator = ( const ShortVector< T, N >& rhs ) = default;
 
 //     /*!***************************************************************************************
 //     * Assign a \f$N\times 1\f$ Matrix.
@@ -413,7 +409,7 @@ inline void normalize( ShortVector< T, N >& A ) {
  *****************************************************************************************/
 template< typename T, unsigned N >
 inline const T angle( const ShortVector< T, N >& A, const ShortVector< T, N >& B ) {
-    return acos( scal(A,B)/sqrt( norm2(A) * norm2(B) ) );
+    return acos( dot(A,B)/sqrt( norm2(A) * norm2(B) ) );
 }
 
 /*!***************************************************************************************

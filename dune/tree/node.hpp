@@ -182,7 +182,6 @@ protected:
     const GridView&                 _gridView;
     const GridType&                 _grid;
     BoundingBox                     _bounding_box;
-    LinaVector                      _normal;            //!< the normal of the plane that splits this node
     unsigned                        _orientation;       //!< the dimension that is split by this node
     unsigned                        _level;             //!< the depth of the node in the tree
     bool                            _isLeaf;
@@ -199,38 +198,36 @@ protected:
     //Only needed for Root!
     Node( Node<GridView>* parent, const GridView& gv, const bool bal = false ) :
         _parent(parent),
-        _child({NULL, NULL}),
+        _child{NULL, NULL},
         _median(0.),
+        _entities(), 
         _gridView(gv),
         _grid(_gridView.grid()),
-        _orientation(0),
-        _normal(0.),
-        _level(0),
         _bounding_box(),
+        _orientation(0),
+        _level(0),        
         _isLeaf(false),
         _isEmpty(true),
         _balanced( bal ), 
         _balance_factor(0)
-    {
-        _normal(_orientation) = 1.;
-    }
+    { }
     
     //Only needed for Nodes themselfs!
     Node( Node<GridView>* parent, const BoundingBox& box, const unsigned level, const unsigned ori, const bool bal ) :
         _parent(parent),
+        _child{NULL, NULL},
+        _median(0.),
+        _entities(), 
         _gridView(parent->_gridView),
         _grid(_gridView.grid()),
-        _level(level),
         _bounding_box(box),
-        _normal(0.),
         _orientation(ori%dim),
-        _child( {NULL, NULL} ),
-        _median(0.),
+        _level(level),
         _isLeaf(false),
         _isEmpty(true),
-        _balanced(bal)
+        _balanced(bal), 
+        _balance_factor(0)
     {
-        _normal( _orientation ) = 1.;
         if ( level > 1000 ) throw GridError( "Tree depth > 1000!", __ERROR_INFO__ );
     }
     
@@ -506,17 +503,18 @@ public:
             numEmpty( 0 ),
             numBadChildren( 0 ),
             minLevel( std::numeric_limits<unsigned>::max() ),
-            maxLevel( std::numeric_limits<unsigned>::min() ),
             aveLevel( 0. ),
+            maxLevel( std::numeric_limits<unsigned>::min() ),
             minLeafLevel( std::numeric_limits<unsigned>::max() ),
-            maxLeafLevel( std::numeric_limits<unsigned>::min() ),
             aveLeafLevel( 0. ),
+            maxLeafLevel( std::numeric_limits<unsigned>::min() ),
             minVertices( std::numeric_limits<unsigned>::max() ),
-            maxVertices( std::numeric_limits<unsigned>::min() ),
             aveVertices( 0. ),
+            maxVertices( std::numeric_limits<unsigned>::min() ),
             minEntitiesPerLeaf( std::numeric_limits<unsigned>::max() ),
-            maxEntitiesPerLeaf( std::numeric_limits<unsigned>::min() ),
-            aveEntitiesPerLeaf( 0. ) {}
+            aveEntitiesPerLeaf( 0. ), 
+            maxEntitiesPerLeaf( std::numeric_limits<unsigned>::min() )
+	{}
 
         std::ostream& operator<< ( std::ostream& out ) const {
             out << "Depth                               " << depth              << std::endl << std::endl;
@@ -552,20 +550,20 @@ public:
         const FieldVector   xl;
         const bool          found;
 
+        DepthFirstResult( const DepthFirstResult&  ) = default;
+        DepthFirstResult(       DepthFirstResult&& ) = default;        
         DepthFirstResult() : es(), xl(0.), found(false) {}
         DepthFirstResult( const EntitySeed& es_, const FieldVector& xl_ ) : es(es_), xl(xl_), found(true) {}
-        DepthFirstResult( const DepthFirstResult& r ) : es(r.es), xl(r.xl), found(r.found) {}
     };
 
-    const Node*             child (const unsigned i)    const { return _child[i];    }
-    const EntityContainer*  entity(const unsigned i)    const { return _entities[i]; }
-    const unsigned          entity_size()               const { return _entities.size(); }
-    const bool              isLeaf()                    const { return _isLeaf;      }
-    const bool              isEmpty()                   const { return _isEmpty;     }
-    const bool              balanced()                  const { return _balanced;    }
-    const unsigned          level()                     const { return _level;       }
-    const unsigned          orientation()               const { return _orientation; }
-    const LinaVector        normal()                    const { return _normal;      }
+    inline const Node*             child (const unsigned i)    const { return _child[i];    }
+    inline const EntityContainer*  entity(const unsigned i)    const { return _entities[i]; }
+    inline const unsigned          entity_size()               const { return _entities.size(); }
+    inline const bool              isLeaf()                    const { return _isLeaf;      }
+    inline const bool              isEmpty()                   const { return _isEmpty;     }
+    inline const bool              balanced()                  const { return _balanced;    }
+    inline const unsigned          level()                     const { return _level;       }
+    inline const unsigned          orientation()               const { return _orientation; }
     
 //=======================================================================================================
 // public methods
