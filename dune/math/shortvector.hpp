@@ -67,7 +67,7 @@ struct ShortVector {
     T data[N];
 
     /*!***************************************************************************************
-    * Contruct and initialize with zero iff SHORT_VECTOR_INIT_ZERO is defined.
+    * Construct and initialize with zero iff SHORT_VECTOR_INIT_ZERO is defined.
     *****************************************************************************************/
     ShortVector() {
         #ifdef SHORT_VECTOR_INIT_ZERO
@@ -76,13 +76,13 @@ struct ShortVector {
     }
 
     /*!***************************************************************************************
-    * Copy/Move-Contruct.
+    * Copy/Move-Construct.
     *****************************************************************************************/
     ShortVector( const ShortVector< T, N >&  rhs ) = default;
-    ShortVector( ShortVector< T, N >&& rhs ) = default;
+//     ShortVector(       ShortVector< T, N >&& rhs ) = default;
 
     /*!***************************************************************************************
-    * Contruct from one or N scalars.
+    * Construct from one or N scalars.
     *****************************************************************************************/
     template< typename ... _T >
     ShortVector( const _T ... in ) {
@@ -110,7 +110,7 @@ struct ShortVector {
     /*!***************************************************************************************
     * Assign the same scalar right hand side to each component.
     *****************************************************************************************/
-     ShortVector< T, N >& operator = ( const T rhs ) {
+    ShortVector< T, N >& operator = ( const T rhs ) {
         for ( unsigned k = 0; k < N; k++ )
             data[k] = rhs;
         return *this;
@@ -157,7 +157,7 @@ struct ShortVector {
     }
 
     /*!***************************************************************************************
-    * Devide every component in place by a scalar right hand side.
+    * Divide every component in place by a scalar right hand side.
     *****************************************************************************************/
     inline const ShortVector< T, N >& operator /= ( const T rhs ) {
         const T aux = static_cast<T>(1.)/rhs;
@@ -167,88 +167,8 @@ struct ShortVector {
     }
 };
 
-// template< unsigned N >
-// struct ShortVector<float, N> {
-//     const unsigned size;
-//     __m128 data[((N%4) ? (N + 4 - N%4) : (N))/4];
-//
-//     /*!***************************************************************************************
-//     * Contruct and initialize with zero iff SHORT_VECTOR_INIT_ZERO is defined.
-//     *****************************************************************************************/
-//     ShortVector() : size(((N%4) ? (N + 4 - N%4) : (N))/4) {
-//         const __m128 aux = _mm_set_ps(0.f, 0.f, 0.f, 0.f);
-//         for ( unsigned k = 0; k < size; k++ )
-//             data[k] = aux;
-//     }
-//
-//     /*!***************************************************************************************
-//     * Copy-Contruct.
-//     *****************************************************************************************/
-//     ShortVector( const ShortVector< float, N >& rhs ) : size(((N%4) ? (N + 4 - N%4) : (N))/4) {
-//         for ( unsigned k = 0; k < size; k++ )
-//             data[k] = rhs.data[k];
-//     }
-//
-//     /*!***************************************************************************************
-//     * Contruct from one or N scalars.
-//     *****************************************************************************************/
-//     template< typename ... _T >
-//     ShortVector( const _T ... in ) : size(((N%4) ? (N + 4 - N%4) : (N))/4) {
-//         static_assert( (N == sizeof...(in)) || (1 == sizeof...(in)), "Invalid number of arguments in constructor");
-//
-//         const __m128 aux = _mm_set_ps(0.f, 0.f, 0.f, 0.f);
-//         for ( unsigned k = 0; k < size; k++ )
-//             data[k] = aux;
-//
-//         float val [] = { static_cast<float>( in ) ... };
-//
-//         if ( N == sizeof...(in) )
-//             for ( unsigned k = 0; k < N; k++ )
-//                 reinterpret_cast<float*>(data)[k] = val[k];
-//         else
-//             for ( unsigned k = 0; k < N; k++ )
-//                 reinterpret_cast<float*>(data)[k] = val[0];
-//
-//     }
-//
-//     /*!***************************************************************************************
-//     * Access k-th component by reference.
-//     *****************************************************************************************/
-//     inline float& operator () ( const unsigned k ) { return reinterpret_cast<float*>(data)[k]; }
-//     /*!***************************************************************************************
-//     * Access k-th component by constant reference.
-//     *****************************************************************************************/
-//     inline const float& operator()( const unsigned k ) const { return reinterpret_cast<float*>(data)[k]; }
-//
-//     /*!***************************************************************************************
-//     * Assign the same scalar right hand side to each component.
-//     *****************************************************************************************/
-//     inline const ShortVector< float, N >& operator = ( const float rhs ) {
-//         const __m128 aux = _mm_set_ps(rhs, rhs, rhs, rhs);
-//         for ( unsigned k = 0; k < size; k++ )
-//             data[k] = aux;
-//         return *this;
-//     }
-//
-//     /*!***************************************************************************************
-//     * Assign an other ShortVector.
-//     *****************************************************************************************/
-//     inline const ShortVector< float, N >& operator = ( const ShortVector< float, N >& rhs ) {
-//         fast_memcpy( data, rhs.data, sizeof(__m128)*size );
-//         return *this;
-//     }
-//
-//     /*!***************************************************************************************
-//     * Devide every component in place by a scalar right hand side.
-//     *****************************************************************************************/
-//     inline const ShortVector< float, N >& operator /= ( const float rhs ) {
-//         const float  aux0 = 1.f/rhs;
-//         const __m128 aux1 = _mm_set_ps(aux0, aux0, aux0, aux0);
-//         for ( unsigned k = 0; k < size; k++ )
-//             data[k] = _mm_mul_ps(data[k], aux1);
-//         return *this;
-//     }
-// };
+
+
 
 /*!***************************************************************************************
  * Vector sum \f$A+B\f$.
@@ -306,7 +226,7 @@ inline const ShortVector< T, N > operator * ( const ShortVector< T, N >& A, cons
 }
 
 /*!***************************************************************************************
- * Devide every component of A by a scalar B.
+ * Divide every component of A by a scalar B.
  *****************************************************************************************/
 template< typename T, unsigned N >
 inline const ShortVector< T, N > operator / ( const ShortVector< T, N >& A, const T B ) {
@@ -421,7 +341,7 @@ inline void zero( ShortVector< T, N >& C ) {
 }
 
 /*!***************************************************************************************
- * Stream formated.
+ * Stream formatted.
  *****************************************************************************************/
 template< typename T, unsigned N >
 inline std::ostream& operator<< ( std::ostream& out, const ShortVector<T, N>& v ) {

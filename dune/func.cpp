@@ -94,10 +94,10 @@ template <typename Traits, typename Grid,  typename Locator, typename FieldVecto
 double interpolate(Traits traits, const Locator& locator, const Grid& grid, const std::vector<FieldVector>& coordinates,  unsigned loops)
 {
     
-    typedef typename Traits::GridView          GridView;
+//     typedef typename Traits::GridView          GridView;
     typedef typename Traits::GridFunction      GridFunction;
     typedef typename Traits::AnalyticFunction  AnalyticFunction;
-    typedef typename Traits::VectorBackend     VectorBackend;
+//     typedef typename Traits::VectorBackend     VectorBackend;
     typedef typename Traits::VectorContainer   VectorContainer;
     typedef typename Traits::GridFunctionSpace GridFunctionSpace;
     typedef typename Traits::FEM               FEM;

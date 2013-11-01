@@ -76,18 +76,18 @@ void random_refine(Grid& grid, double fraction = 0.25)
 template< class GridView , class Locator>
 unsigned locate( const Locator& locator, const GridView& gridview, const std::vector<Dune::FieldVector<typename GridView::ctype, GridView::dimension> >&  coordinates, unsigned loops )
 {
-    typedef typename GridView::Grid::template Codim<0>::EntityPointer EntityPointer;
-    typedef typename GridView::Grid::template Codim<0>::Entity        Entity;
-    typedef typename  GridView::Grid        GridType;
-    static constexpr  unsigned              dim  = GridType::dimension;
-    static constexpr  unsigned              dimw = GridType::dimensionworld;
-    typedef typename  GridView::ctype       Real;
+//     typedef typename GridView::Grid::template Codim<0>::EntityPointer EntityPointer;
+//     typedef typename GridView::Grid::template Codim<0>::Entity        Entity;
+//     typedef typename  GridView::Grid        GridType;
+//     static constexpr  unsigned              dim  = GridType::dimension;
+//     static constexpr  unsigned              dimw = GridType::dimensionworld;
+//     typedef typename  GridView::ctype       Real;
 
-    auto& gids = gridview.grid().globalIdSet();
-    unsigned res = 0;    
+    auto&    gids = gridview.grid().globalIdSet();
+    unsigned res  = 0;    
     for (unsigned u = 0; u < loops; u++)
         for(const auto& x : coordinates) {
-            const EntityPointer ep = locator.findEntity( x );
+            const auto ep = locator.findEntity( x );
             res += gids.id(*ep);
     }
    
@@ -97,7 +97,7 @@ unsigned locate( const Locator& locator, const GridView& gridview, const std::ve
 // compare dune hierarchic search with new kd-tree search
 template < class Grid >
 bool benchmark(const Grid& grid) {  
-    static constexpr  unsigned              dim  = Grid::dimension;
+//     static constexpr  unsigned              dim  = Grid::dimension;
     static constexpr  unsigned              dimw = Grid::dimensionworld;
     typedef typename  Grid::LeafGridView    GridView;
     typedef typename  GridView::ctype       Real;
