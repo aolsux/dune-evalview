@@ -105,9 +105,13 @@ public:
         const Entity&                       entity;
         const FieldVector                   xl;
 
+        EntityData( const EntityData&  ) = default;
+        EntityData(       EntityData&& ) = default;
         EntityData( const EntityPointer pointer_,
                     const Entity&       entity_,
                     const FieldVector   xl_  ) : pointer(pointer_),  entity(entity_), xl(xl_) {}
+                    
+                    
     };
    
    

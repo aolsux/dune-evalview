@@ -102,21 +102,18 @@ protected:
         VertexContainer() :
             _entity_seeds    (  ),
             _global          (0.),
+            _seed            (  ),
             _id              (0 )
         {}
+        
+        VertexContainer( const VertexContainer&  ) = default;
+        VertexContainer(       VertexContainer&& ) = default;
 
         VertexContainer( const VertexSeed& seed ) :
             _entity_seeds    (    ),
             _global          (0.  ),
             _seed            (seed),
             _id              (0   )
-        {}
-
-        VertexContainer( const VertexContainer& v ) :
-            _entity_seeds    (v._entity_seeds     ),
-            _global          (v._global           ),
-            _seed            (v._seed             ),
-            _id              (v._id               )
         {}
 
         void remove_duplicates() {
@@ -144,16 +141,10 @@ protected:
             _id             (0)
         {}
         
-        EntityContainer( const EntitySeed& seed ) : _seed(seed), _neighbour_seeds(), _bb(), _global(0.), _id(0), _idx(0) {}
+        EntityContainer( const EntityContainer&  ) = default;
+        EntityContainer(       EntityContainer&& ) = default;
         
-        EntityContainer( const EntityContainer& ec ) :
-            _seed           (ec._seed             ),
-            _neighbour_seeds(ec._neighbour_seeds  ),
-            _bb             (ec._bb               ), 
-            _global         (ec._global           ),
-            _id             (ec._id               ), 
-            _idx            (ec._idx               )
-        {}
+        EntityContainer( const EntitySeed& seed ) : _seed(seed), _neighbour_seeds(), _bb(), _global(0.), _id(0), _idx(0) {}
         
         void remove_duplicates( const std::vector< EntityContainer* >& entities ) {
             // remove duplicate entities
@@ -195,6 +186,7 @@ protected:
 //=======================================================================================================
 protected:    
     //== constructot / destructor =======================================================================
+
     //Only needed for Root!
     Node( Node<GridView>* parent, const GridView& gv, const bool bal = false ) :
         _parent(parent),
@@ -570,8 +562,9 @@ public:
 //=======================================================================================================
 public:
     //== constructot / destructor =======================================================================
-    Node() = delete;
-    Node( const Node<GridView>& node ) = delete;
+    Node()               = delete;
+    Node( const Node&  ) = delete;
+    Node(       Node&& ) = default;
     Node& operator = ( const Node<GridView>& node ) = delete;
     
     virtual ~Node() {
