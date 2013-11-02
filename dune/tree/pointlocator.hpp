@@ -89,12 +89,7 @@ protected:
     static constexpr unsigned dim     = Traits::dim;    //!< grid dimension
     static constexpr unsigned dimw    = Traits::dimw;   //!< world dimension
 
-    std::map< unsigned, unsigned > _id2idxEntity;       //!< map from global entity-id to index in _entities
-    std::map< unsigned, unsigned > _id2idxVertex;       //!< map from global entity-id to index in _vertices
-
 //     std::vector<EntityContainer*>  _entities;           //!< EntityContainer for all codim 0 entities in GridView
-
-    std::vector< VertexContainer* > _vertices;
    
 //=======================================================================================================
 // public data
@@ -120,7 +115,8 @@ public:
 //=======================================================================================================
 public:
     //== constructor / destructor =======================================================================
-    PointLocator( const PointLocator<GridView>& root ) = delete;
+    PointLocator( const PointLocator<GridView>&  ) = delete;
+//     PointLocator(       PointLocator<GridView>&& ) = default;
 
     PointLocator( const GridView& gridview, const bool bal = false ) :
         Node<GV>(NULL,gridview, bal)
@@ -137,16 +133,19 @@ public:
         Node<GV>::release();
         for ( auto e : _entities )
             safe_delete( e );
-        for ( auto v : _vertices )
-            safe_delete( v );
+//         for ( auto v : _vertices )
+//             safe_delete( v );
         _entities.clear();
-        _vertices.clear();
+//         _vertices.clear();
     }
 
     //== build tree =====================================================================================
     void build() {
         std::vector< EntityContainer* > _l_entities;
-
+        std::map< unsigned, unsigned > _id2idxEntity;       //!< map from global entity-id to index in _entities
+        std::map< unsigned, unsigned > _id2idxVertex;       //!< map from global entity-id to index in _vertices
+        std::vector< VertexContainer* > _vertices;
+        
         const auto& idSet = _grid.globalIdSet();
 
         // collect cells on leaf view
@@ -301,7 +300,7 @@ public:
         
         Node<GV>::fillTreeStats(ts);
 
-        ts.numVertices         = _vertices.size();
+        ts.numVertices         = _entities.size();
         ts.aveLevel           /= static_cast<Real>( ts.numNodes );
         ts.aveLeafLevel       /= static_cast<Real>( ts.numLeafs );
         ts.aveVertices        /= static_cast<Real>( ts.numNodes );

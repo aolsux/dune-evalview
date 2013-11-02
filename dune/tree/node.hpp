@@ -487,6 +487,9 @@ public:
         Real     aveEntitiesPerLeaf;
         unsigned maxEntitiesPerLeaf;
 
+        TreeStats( const TreeStats&  ) = default;
+        TreeStats(       TreeStats&& ) = default;
+        
         TreeStats() :
             depth( 0 ),
             numNodes( 0 ),
