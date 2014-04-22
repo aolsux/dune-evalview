@@ -1,0 +1,17 @@
+--> Make binary directories
+
+mkdir contrib
+mkdir build
+
+--> Extract DUNE 2.2.1 pre-built
+ 
+cd contrib
+tar xvf dune.tar.gz
+
+--> Configure using cmake
+cd ..
+cd build
+cmake -DALUGRID_ROOT=`pwd`/../contrib -DDUNE_ROOT=`pwd`/../contrib -DMETIS_ROOT=`pwd`/../contrib ../
+
+--> Build using make
+make

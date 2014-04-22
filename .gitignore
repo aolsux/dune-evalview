@@ -1,0 +1,10 @@
+*~
+*.log
+*.aux
+*.bak
+*.kdev4
+*.kate-swap
+build/
+doxy/
+contrib/
+.kdev_include_paths
